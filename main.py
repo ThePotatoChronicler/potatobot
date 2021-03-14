@@ -11,7 +11,7 @@ import sqlite3 as sqlite
 database                = sqlite.Connection('data.db')    # Database
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = '0.6.9 - Malice'                # Version
+version                 = '0.7.1 - Malice'                # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
@@ -61,9 +61,9 @@ def board(lin, symbol='#', height=10):
                 else:
                     out[i] = out[i] + ' '
 
-        return "\n".join(out[::-1])
+        return '\n' + '\n'.join(out[::-1])
     except ZeroDivisionError:
-        return (symbol + '\n') * 10
+        return '\n' + (symbol + '\n') * 10
 
 
 def boardgen(lin, symbol='#', symbolv='@', height=10):
@@ -479,10 +479,6 @@ async def on_message(m):  # Executes on every message
                 await commandsDict[f'{m.content.split()[0][len(prefix):]}'](m)
             except KeyError:
                 await m.channel.send('Command doesn\'t exist!')
-            except Exception as e:
-                await m.author.send('An error has occured, you should contact Potato with the following error:')
-                await m.author.send(e)
-                raise e
 
     else:
         if m.author.id == 185421198094499840 and m.content == 'close':
@@ -506,7 +502,6 @@ async def on_message_edit(mb, ma):
 
 
 keep_alive()  # Starts a webserver to be pinged.
-token = os.environ.get("DISCORD_BOT_TOKEN")
-client.run(token)
+client.run(os.environ.get("DISCORD_BOT_TOKEN"))
 
 database.close()
