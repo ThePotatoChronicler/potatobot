@@ -3,6 +3,7 @@ from keep_alive import keep_alive # repl.it keep_alive function
 
 print('Starting Potato Overlord!')
 
+import asyncio
 import discord
 import requests
 import datetime
@@ -11,7 +12,7 @@ import sqlite3 as sqlite
 database                = sqlite.Connection('data.db')    # Database
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = '0.7.1 - Malice'                # Version
+version                 = '0.8.0 - Malice'                # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
@@ -24,10 +25,10 @@ commandsDict = {}  # Globalization
 def add_command(alias=None):
     def wrapper(function):
         if alias == None:
-            commandsDict[str(function.__name__)] = function
+            commandsDict[function.__name__] = function
         else:
-            for name in tuple(alias):
-                commandsDict[str(name)] = function
+            for name in alias:
+                commandsDict[name] = function
 
     return wrapper
 
@@ -106,15 +107,53 @@ async def ver(m):
 @add_command()
 async def ping(m):
     await m.channel.send(
-        f'Pong! `{datetime.datetime.now(tz=datetime.timezone.utc) - m.created_at.replace(tzinfo=datetime.timezone.utc)}`'
+        f'Pong! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
     )
 
 
 @add_command()
 async def pong(m):
     await m.channel.send(
-        f'Ping! `{datetime.datetime.now(tz=datetime.timezone.utc) - m.created_at.replace(tzinfo=datetime.timezone.utc)}`'
+        f'Ping! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
     )
+
+
+@add_command()
+async def tmp(m):
+    if m.channel.category.name == '/tmp':
+        await m.channel.edit(name='_'.join(m.content.split()[1:]))
+    else:
+        categ = None
+        for category in m.guild.categories:
+            if category.name == '/tmp':
+                categ = category
+                break
+        if categ:
+            ch = await categ.create_text_channel('_'.join(m.content.split()[1:]), reason=f'{m.author.name}#{m.author.discriminator} used the tmp command!',)
+            await ch.set_permissions(m.author, manage_channels=True, manage_messages=True)
+            while True:
+                await asyncio.sleep(300)
+                try:
+                    lm = await ch.fetch_message(ch.last_message_id)
+                    if (datetime.datetime.utcnow() - lm.created_at).total_seconds() > 300:
+                        await ch.delete()
+                        break
+                except:
+                    await ch.delete()
+                    break
+
+                
+        else:
+            await m.channel.send('This server doesn\'t have a /tmp category!')
+
+
+
+@add_command()
+async def tatohost(m):
+    if os.getenv('USER') == 'potato':
+        await m.channel.send('Potato is hosting!')
+    else:
+        await m.channel.send('Nope, not potato!')
 
 
 @add_command()
@@ -343,100 +382,135 @@ async def on_ready():  # Executes when bot connects
             type=discord.ActivityType.listening, name='p! >w>'))
     print('Potato Overlord is ready!')
     
-    funcs = []
+    # Temporary channel management after crash or reboot
+    async def managetmp():
+        async def managetmpch(ch):
+            while True:
+                await asyncio.sleep(300)
+                try:
+                    lm = await ch.fetch_message(ch.last_message_id)
+                    if (datetime.datetime.utcnow() - lm.created_at).total_seconds() > 300:
+                        await ch.delete()
+                        break
+                except:
+                    await ch.delete()
+                    break
 
-    # Bogosort
-    async def f1(m_id, c_id, a, l):
-        from random import shuffle
-        amount = a
-        message = client.get_channel(c_id).get_partial_message(m_id)
-        sort = [
-            int(x) if float(x) % 1 == 0 else float(x)
-            for x in l.split(' ')
-        ]
+        lst = []
+        for guild in client.guilds:
+            for category in guild.categories:
+                if category.name == '/tmp':
+                    for ch in category.text_channels:
+                        lst.append(managetmpch(ch))
+                    break
 
-        while not all(x <= y for x, y in zip(sort, sort[1:])):
-            await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``'
-                               )
-            shuffle(sort)
-            amount += 1
+        await asyncio.gather(*lst)
 
-            if amount % 20 == 0:
-                save_sort_to_db(0, m_id, c_id, amount, sort)
+    # Manage sorts that were saved and left unfinished before crash or reboot
+    async def managesorts():
+        funcs = []
 
-        await message.edit(
-            content=
-            f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}"
-        )
-        remove_sort_from_db(m_id)
+        # Bogosort
+        async def f1(m_id, c_id, a, l):
+            from random import shuffle
+            amount = a
+            message = client.get_channel(c_id).get_partial_message(m_id)
+            sort = [
+                int(x) if float(x) % 1 == 0 else float(x)
+                for x in l.split(' ')
+            ]
 
-    funcs.append(f1)
-
-    # Bubblesort
-    async def f2(m_id, c_id, a, l):
-        amount = a
-        message = client.get_channel(c_id).get_partial_message(m_id)
-        sort = [
-            int(x) if float(x) % 1 == 0 else float(x)
-            for x in l.split(' ')
-        ]
-
-        for i in range(len(sort)):
-            for j in range(len(sort) - 1 - i):
-                await message.edit(
-                    content=f"```{board(sort)}```Comparisons: ``{amount}``")
-                if sort[j] > sort[j + 1]:
-                    sort[j], sort[j + 1] = sort[j + 1], sort[j]
+            while not all(x <= y for x, y in zip(sort, sort[1:])):
+                await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``'
+                                   )
+                shuffle(sort)
                 amount += 1
 
                 if amount % 20 == 0:
-                    save_sort_to_db(1, m_id, c_id, amount, sort)
+                    save_sort_to_db(0, m_id, c_id, amount, sort)
 
-        await message.edit(
-            content=
-            f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
-        )
-        remove_sort_from_db(m_id)
+            await message.edit(
+                content=
+                f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}"
+            )
+            remove_sort_from_db(m_id)
 
-    funcs.append(f2)
+        funcs.append(f1)
 
-    async def f3(m_id, c_id, a, l):
-        amount = a
-        message = client.get_channel(c_id).get_partial_message(m_id)
-        sort = [
-            int(x) if float(x) % 1 == 0 else float(x)
-            for x in l.split(' ')
-        ]
+        # Bubblesort
+        async def f2(m_id, c_id, a, l):
+            amount = a
+            message = client.get_channel(c_id).get_partial_message(m_id)
+            sort = [
+                int(x) if float(x) % 1 == 0 else float(x)
+                for x in l.split(' ')
+            ]
 
-        for i in range(1, len(sort)):
-            key = sort[i]
-            j = i - 1
-            while j >= 0 and key < sort[j]:
-                amount += 2
-                sort[j + 1] = sort[j]
-                j -= 1
-                save_sort_to_db(2, m_id, c_id, amount, sort)
+            for i in range(len(sort)):
+                for j in range(len(sort) - 1 - i):
+                    await message.edit(
+                        content=f"```{board(sort)}```Comparisons: ``{amount}``")
+                    if sort[j] > sort[j + 1]:
+                        sort[j], sort[j + 1] = sort[j + 1], sort[j]
+                    amount += 1
+
+                    if amount % 20 == 0:
+                        save_sort_to_db(1, m_id, c_id, amount, sort)
+
+            await message.edit(
+                content=
+                f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
+            )
+            remove_sort_from_db(m_id)
+
+        funcs.append(f2)
+
+        async def f3(m_id, c_id, a, l):
+            amount = a
+            message = client.get_channel(c_id).get_partial_message(m_id)
+            sort = [
+                int(x) if float(x) % 1 == 0 else float(x)
+                for x in l.split(' ')
+            ]
+
+            for i in range(1, len(sort)):
+                key = sort[i]
+                j = i - 1
+                while j >= 0 and key < sort[j]:
+                    amount += 2
+                    sort[j + 1] = sort[j]
+                    j -= 1
+                    save_sort_to_db(2, m_id, c_id, amount, sort)
+                    await message.edit(
+                        content=f'```{board(sort)}```Comparisons: ``{amount}``')
+                else:
+                    amount += 1
+                sort[j + 1] = key
                 await message.edit(
                     content=f'```{board(sort)}```Comparisons: ``{amount}``')
-            else:
-                amount += 1
-            sort[j + 1] = key
+
             await message.edit(
-                content=f'```{board(sort)}```Comparisons: ``{amount}``')
+                content=
+                f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
+            )
+            remove_sort_from_db(m_id)
 
-        await message.edit(
-            content=
-            f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
-        )
-        remove_sort_from_db(m_id)
+        funcs.append(f3)
 
-    funcs.append(f3)
+        # Restart all saved sorts
+        lst = []
+        dbcursor.execute('SELECT * FROM sorts')
+        for fetched in dbcursor.fetchall():
+            t, *args = fetched
+            lst.append(funcs[t](*args))
 
-    # Restart all saved sorts
-    dbcursor.execute('SELECT * FROM sorts')
-    for fetched in dbcursor.fetchall():
-        t, *args = fetched
-        await funcs[t](*args)
+        await asyncio.gather(*lst)
+
+    # Begin
+    await asyncio.gather(managetmp(),
+                         managesorts())
+
+    print('Finished on_ready')
 
 
 @client.event
