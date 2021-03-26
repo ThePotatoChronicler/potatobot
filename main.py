@@ -3,8 +3,10 @@ from keep_alive import keep_alive # repl.it keep_alive function
 
 print('Starting Potato Overlord!')
 
+import art
 import asyncio
 import discord
+import discord.ext.commands
 import requests
 import datetime
 import sqlite3 as sqlite
@@ -12,23 +14,30 @@ import sqlite3 as sqlite
 database                = sqlite.Connection('data.db')    # Database
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = '0.8.0 - Malice'                # Version
+version                 = '1.0.1 - Wrath'                 # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
-client                  = discord.Client(intents=intents) # Create client
+client                  = discord.ext.commands.Bot(prefix, None, intents=intents) # Create client
 client.allowed_mentions = defment                         # Sets who can be mentioned
 
+onreadyonce = False # Stops on_ready from firing multiple times
 commandsDict = {}  # Globalization
+spamDict = {} # Preventing spam/bot abuse
 
 
-def add_command(alias=None):
+def add_command(alias=None, timeout=5, **kwargs):
     def wrapper(function):
+        comdict = {
+            'function': function,
+            'timeout': timeout,
+            **kwargs
+        }
         if alias == None:
-            commandsDict[function.__name__] = function
+            commandsDict[function.__name__] = comdict
         else:
             for name in alias:
-                commandsDict[name] = function
+                commandsDict[name] = comdict
 
     return wrapper
 
@@ -71,8 +80,39 @@ def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
 
 
+@add_command(['help'], 12)
+async def _(m):
+    """
+    `{prefix}help (commandname)`
+
+    Shows help of any command.
+    """
+    try:
+        name = m.content.split()[1]
+        cdict = commandsDict[name]
+    except IndexError:
+        name = 'help'
+        cdict = commandsDict[name]
+    except KeyError:
+        await m.channel.send('Cannot find this command!')
+        return
+
+    doc = cdict['function'].__doc__
+    if doc:
+        from inspect import cleandoc
+        await m.channel.send(f"Showing documentation for {name}:\n{cleandoc(doc.format(prefix=prefix))}")
+    else:
+        await m.channel.send('Can\'t find any documentation, sorry!')
+
+
 @add_command()
 async def nonamechange(m):
+    """
+    `{prefix}nonamechange (user)`
+
+    Moderators only. Requires the **Unchanging** role in this server.
+    Makes the user unable to rename themselves.
+    """
     if m.author.guild_permissions.manage_nicknames:
         for role in m.guild.get_member(int(m.content.split()[1])).roles:
             if role.name == 'Unchanging':
@@ -99,13 +139,60 @@ async def nonamechange(m):
         m.channel.send('You need ``Manage Nicknames`` permission to do this!')
 
 
-@add_command(('version', 'ver'))
-async def ver(m):
+@add_command()
+async def joinchannel(m):
+    """
+    `{prefix}joinchannel`
+
+    Server owner only.
+    Makes the specified channel the welcome channel.
+    """
+    if m.guild.owner == m.author:
+        dbcursor.execute('UPDATE servers SET join_chat = ? WHERE server = ?', (m.channel.id, m.guild.id))
+        database.commit()
+    else:
+        await m.delete()
+        await m.channel.send('You do not have the permission!', delete_after=5)
+
+
+@add_command()
+async def tictactoe(m):
+    """
+    `{prefix}tictactoe`
+
+    Undefined.
+    """
+    pass
+
+
+@add_command(['timeouts'], 120)
+async def _(m):
+    """
+    `{prefix}timeouts`
+
+    Shows the timeouts of every command in seconds.
+    """
+    await m.channel.send('{}'.format(', '.join([f"{x} : {commandsDict[x]['timeout']}" for x in commandsDict])))
+
+
+@add_command(('version', 'ver'), 30)
+async def _(m):
+    """
+    `{prefix}ver`
+    `{prefix}version`
+
+    Shows the bot's version number and name.
+    """
     await m.channel.send(f'Potato Overlord version: {version}')
 
 
 @add_command()
 async def ping(m):
+    """
+    `{prefix}ping`
+
+    Shows the bot's response time in seconds.
+    """
     await m.channel.send(
         f'Pong! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
     )
@@ -113,13 +200,28 @@ async def ping(m):
 
 @add_command()
 async def pong(m):
+    """
+    `{prefix}pong`
+
+    Shows the bot's response time in seconds.
+    """
     await m.channel.send(
         f'Ping! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
     )
 
 
-@add_command()
+@add_command(timeout=180)
 async def tmp(m):
+    """
+    `{prefix}tmp (channel name)`
+
+    Creates a temporary channel in the '/tmp' category.
+    This chat will automatically delete itself when unused
+    for a certain amount of time.
+
+    Will not function if no /tmp category exists.
+    Grants special permissions to the command's author in the created channel.
+    """
     if m.channel.category.name == '/tmp':
         await m.channel.edit(name='_'.join(m.content.split()[1:]))
     else:
@@ -142,14 +244,71 @@ async def tmp(m):
                     await ch.delete()
                     break
 
-                
+
         else:
             await m.channel.send('This server doesn\'t have a /tmp category!')
 
 
 
 @add_command()
+async def figlet(m):
+    """
+    `{prefix}figlet [font] (text)`
+
+    Creates ascii art of the entered text.
+    If the font is invalid, the first word
+    is treated as text.
+    """
+    if len(m.content.split()) < 2:
+        return
+    if (m.content.split()[1] in art.FONT_NAMES) and (len(m.content.split()) > 2):
+        await m.channel.send(f"```{discord.utils.escape_markdown(art.text2art(' '.join(m.content.split()[2:]), m.content.split()[1]))}```")
+    else:
+        await m.channel.send(f"```{discord.utils.escape_markdown(art.text2art(' '.join(m.content.split()[1:]), 'random'))}```")
+
+
+@add_command(['art'])
+async def _(m):
+    """
+    `{prefix}art (art_name) [art_name2] ... [art_namen]`
+
+    Sends ascii art based on the name.
+    The full list can be found here:
+    https://www.4r7.ir/ArtList.html
+    Spaces in names should be replaced with underscores (_).
+    """
+    message = ''
+    for i in range(len(m.content.split()) - 1):
+        try:
+            message += f"`{discord.utils.escape_markdown(art.art(m.content.split()[i + 1].replace('_', ' ')))}`" + '\n'
+        except art.artError:
+            pass
+
+    if message:
+        await m.channel.send(message)
+
+
+
+@add_command(['arts'], 10)
+async def _(m):
+    """
+    `{prefix}arts`
+
+    Sends a link to the full list of arts and art names.
+    May be replaced in the future to send all arts and their respective names.
+    """
+    await m.channel.send('Full list can be found here: https://www.4r7.ir/ArtList.html')
+
+
+
+@add_command(timeout=40)
 async def tatohost(m):
+    """
+    `{prefix}tatohost`
+
+    Shows if the bot is currently being hosted by the bot's creator,
+    Jagaimo no Shikan a.k.a. The Potato Chronicler.
+    """
     if os.getenv('USER') == 'potato':
         await m.channel.send('Potato is hosting!')
     else:
@@ -158,6 +317,13 @@ async def tatohost(m):
 
 @add_command()
 async def lockdown(m):
+    """
+    `{prefix}lockdown`
+
+    Moderator only.
+    Prevents the default role from sending messages in this chat.
+    Won't work if the chats are set improperly.
+    """
     overwrite = m.channel.overwrites_for(m.guild.default_role)
     overwrite.send_messages = False
     moderator = False
@@ -178,6 +344,13 @@ async def lockdown(m):
 
 @add_command()
 async def unlockdown(m):
+    """
+    `{prefix}unlockdown`
+
+    Moderator only.
+    Allows the default role from sending messages in this chat.
+    Won't work if the chats are set improperly.
+    """
     overwrite = m.channel.overwrites_for(m.guild.default_role)
     overwrite.send_messages = True
     moderator = False
@@ -195,8 +368,13 @@ async def unlockdown(m):
     else:
         await m.channel.send("You do not have the right to do this", delete_after=5)
 
-@add_command()
+@add_command(timeout=300)
 async def commands(m):
+    """
+    `{prefix}commands`
+
+    Shows all the bot's commands in an alphabetical order.
+    """
     await m.channel.send(
         f'List of commands: `{", ".join(sorted(list(commandsDict.keys())))}`'
     )
@@ -204,9 +382,15 @@ async def commands(m):
 
 @add_command()
 async def xkcd(m):
+    """
+    `{prefix}xkcd [number]`
+
+    Shows a random xkcd comic.
+    If the number is specified, it shows the specified comic.
+    """
     if len(m.content.split()) == 1:
         from random import randint
-        await m.channel.send(f'https://xkcd.com/{randint(1, 2422)}/')
+        await m.channel.send(f'https://xkcd.com/{randint(1, 2441)}/')
         return
     elif len(m.content.split()) == 2:
         try:
@@ -220,6 +404,11 @@ async def xkcd(m):
 
 @add_command()
 async def cat(m):
+    """
+    `{prefix}cat`
+
+    Shows a random picture of a cat.
+    """
     await m.channel.send(
         requests.get('https://api.thecatapi.com/v1/images/search').json()[0]
         ['url'])
@@ -227,13 +416,24 @@ async def cat(m):
 
 @add_command()
 async def dog(m):
+    """
+    `{prefix}dog`
+
+    Shows a random picture of a dog.
+    """
     await m.channel.send(
         requests.get('https://api.thedogapi.com/v1/images/search').json()[0]
         ['url'])
 
 
-@add_command()
+@add_command(timeout=600)
 async def ownermail(m):
+    """
+    `{prefix}ownermail (message)`
+
+    DMs the owner of the server.
+    Should not be used for conversations.
+    """
     await m.delete()
     if len(m.content.split()) > 1:
         await m.guild.owner.send(
@@ -244,8 +444,14 @@ async def ownermail(m):
             f'Usage: `{prefix}ownermail [message]`', delete_after=2)
 
 
-@add_command()
+@add_command(timeout=600)
 async def modmail(m):
+    """
+    `{prefix}modmail (message)`
+
+    DMs the moderators of the server.
+    Should not be used for conversations.
+    """
     await m.delete()
     if len(m.content.split()) > 1:
         for role in m.guild.roles:
@@ -281,8 +487,15 @@ async def modmail(m):
 #     await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
 
 
-@add_command(('bogosort', 'bogo'))
+@add_command(('bogosort', 'bogo'), 45)
 async def bogosort(m):
+    """
+    `{prefix}bogo (numbers)`
+    `{prefix}bogosort (numbers)`
+
+    Sorts the inputted list of numbers using the
+    bogosort algorithm.
+    """
     from random import shuffle
     amount = 0
     if len(m.content.split()) < 2:
@@ -309,8 +522,15 @@ async def bogosort(m):
     remove_sort_from_db(message.id)
 
 
-@add_command(('bubblesort', 'bubble'))
+@add_command(('bubblesort', 'bubble'), 30)
 async def bubblesort(m):
+    """
+    `{prefix}bubble (numbers)`
+    `{prefix}bubblesort (numbers)`
+
+    Sorts the inputted list of numbers using the
+    bubblesort algorithm.
+    """
     amount = 0
     if len(m.content.split()) < 2:
         return
@@ -338,8 +558,15 @@ async def bubblesort(m):
     remove_sort_from_db(message.id)
 
 
-@add_command(('insertionsort', 'insertion'))
+@add_command(('insertionsort', 'insertion'), 30)
 async def insertionsort(m):
+    """
+    `{prefix}insertion (numbers)`
+    `{prefix}insertionsort (numbers)`
+
+    Sorts the inputted list of numbers using the
+    insertion sort algorithm.
+    """
     amount = 0
     if len(m.content.split()) < 2:
         return
@@ -377,11 +604,29 @@ async def insertionsort(m):
 
 @client.event
 async def on_ready():  # Executes when bot connects
+
+    global onreadyonce
+    if onreadyonce:
+        return
+
+    onreadyonce = True
+
     await client.change_presence(
         activity=discord.Activity(
-            type=discord.ActivityType.listening, name='p! >w>'))
+            type=discord.ActivityType.listening, name=f'{prefix} >w>'))
     print('Potato Overlord is ready!')
-    
+
+    # Checks for new guilds, adds them to database
+    async def managenewguilds():
+        while True:
+            for guild in client.guilds:
+                dbcursor.execute('SELECT server FROM servers WHERE server = ?', [guild.id])
+                if not dbcursor.fetchone():
+                    dbcursor.execute('INSERT INTO servers(server) VALUES(?)', [guild.id])
+
+            database.commit()
+            await asyncio.sleep(600)
+
     # Temporary channel management after crash or reboot
     async def managetmp():
         async def managetmpch(ch):
@@ -508,9 +753,8 @@ async def on_ready():  # Executes when bot connects
 
     # Begin
     await asyncio.gather(managetmp(),
-                         managesorts())
-
-    print('Finished on_ready')
+                         managesorts(),
+                         managenewguilds())
 
 
 @client.event
@@ -522,8 +766,10 @@ async def on_disconnect():  # Executes when bot loses connection
 async def on_message(m):  # Executes on every message
 
     # Exit if message was sent by the bot
-    if m.author == client.user:
+    if m.author == client.user or m.author.bot:
         return
+
+    nomentions = discord.AllowedMentions.none()
 
     # Checks if sent from a guild
     if isinstance(m.channel,
@@ -538,26 +784,78 @@ async def on_message(m):  # Executes on every message
             await m.channel.send(
                 discord.utils.escape_mentions(
                     f'{m.author.display_name} : {m.content.encode("utf-8").hex()}'
-                ).replace(':', r'\:'))
+                ).replace(':', r'\:'),
+                allowed_mentions=nomentions
+            )
             return
 
         if m.channel.name == 'binary-wars' or m.channel.name == 'binary_wars':
             await m.delete()
             await m.channel.send(
-                f'{m.author.display_name} : {"".join(bin(ord(x))[2:] for x in m.content)}'
+                f'{m.author.display_name} : {"".join(bin(ord(x))[2:] for x in m.content)}',
+                allowed_mentions=nomentions
             )
             return
 
         if m.content.startswith(prefix):
+            if spamDict.setdefault(m.author.id, 0) >= 2:
+                return
+
             try:
-                await commandsDict[f'{m.content.split()[0][len(prefix):]}'](m)
+                comdict = commandsDict[m.content.split()[0][len(prefix):]]
             except KeyError:
                 await m.channel.send('Command doesn\'t exist!')
+                return
+
+            spamDict[m.author.id] += 1
+
+            await comdict['function'](m)
+
+            await asyncio.sleep(comdict['timeout'])
+
+            spamDict[m.author.id] -= 1
+
 
     else:
         if m.author.id == 185421198094499840 and m.content == 'close':
             m.channel.send('Closing.')
             await client.close()
+
+
+@client.event
+async def on_member_join(m):
+    dbcursor.execute('SELECT join_chat FROM servers WHERE server = ?', [m.guild.id])
+    chat = m.guild.get_channel(dbcursor.fetchone()[0])
+    if chat:
+        await chat.send(f'{m.name} has joined **{m.guild.name}**! We\'re now **{m.guild.member_count}** strong!',
+                        allowed_mentions = discord.AllowedMentions.none())
+
+
+@client.event
+async def on_member_remove(m):
+    dbcursor.execute('SELECT join_chat FROM servers WHERE server = ?', [m.guild.id])
+    chat = m.guild.get_channel(dbcursor.fetchone()[0])
+    if chat:
+        await chat.send(f'{m.name} has deserted **{m.guild.name}**! We\'re now **{m.guild.member_count}** strong!',
+                        allowed_mentions = discord.AllowedMentions.none())
+
+
+@client.event
+async def on_member_ban(g, u):
+    dbcursor.execute('SELECT join_chat FROM servers WHERE server = ?', [g.id])
+    chat = g.get_channel(dbcursor.fetchone()[0])
+    if chat:
+        await chat.send(f'{u.name} has been executed.',
+                        allowed_mentions = discord.AllowedMentions.none())
+
+
+@client.event
+async def on_member_unban(g, u):
+    dbcursor.execute('SELECT join_chat FROM servers WHERE server = ?', [g.id])
+    chat = g.get_channel(dbcursor.fetchone()[0])
+    if chat:
+        await chat.send(f'{u.name} has been pardoned by the gods.',
+                        allowed_mentions = discord.AllowedMentions.none())
 
 
 @client.event
