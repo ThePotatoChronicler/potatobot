@@ -3,6 +3,7 @@ from keep_alive import keep_alive # repl.it keep_alive function
 
 print('Starting Potato Overlord!')
 
+import potatoscript
 import art
 import asyncio
 import discord
@@ -14,7 +15,7 @@ import sqlite3 as sqlite
 database                = sqlite.Connection('data.db')    # Database
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = '1.0.1 - Wrath'                 # Version
+version                 = 'V110 - Wrath'                 # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
@@ -139,6 +140,52 @@ async def nonamechange(m):
         m.channel.send('You need ``Manage Nicknames`` permission to do this!')
 
 
+@add_command(['emojipurge'], 30)
+async def _(m):
+    """
+    `{prefix}emojipurge`
+    `{prefix}emojipurge true`
+
+    Server owner only.
+    Deletes all emojis from the server,
+    *except* those whose names start with `_`.
+    To also delete animated emojis, add true.
+    May take a while to finish.
+
+    __**THIS ACTION CANNOT BE TAKEN BACK.**__
+    """
+    if m.guild.owner.id == m.author.id:
+        await m.channel.send("Purging.")
+        animated = False
+
+        if len(m.content.split()) >= 2:
+            if m.content.split()[1] == "true":
+                animated = True
+
+        for emoji in m.guild.emojis:
+            if not emoji.name.startswith('_'):
+                if (not emoji.animated) or (emoji.animated and animated):
+                    await emoji.delete(reason=f"Command executed by {m.author.name}#{m.author.discriminator}")
+    else:
+        await m.channel.send("You're not the owner!", delete_after=3)
+
+
+@add_command(['spam'])
+async def _(m):
+    """
+    `{prefix}spam`
+
+    :)
+    """
+    if m.author.id != 185421198094499840:
+        raise KeyError("Not allowed m8")
+
+    i = 0
+    while i < int(m.content.split()[1]):
+        await m.channel.send(' '.join(m.content.split(' ')[2:]))
+        i += 1
+
+
 @add_command()
 async def joinchannel(m):
     """
@@ -153,6 +200,78 @@ async def joinchannel(m):
     else:
         await m.delete()
         await m.channel.send('You do not have the permission!', delete_after=5)
+
+
+@add_command(['potatoscript', 'script', 'ps'])
+async def _(m):
+    """
+    `{prefix}potatoscript`
+    ```
+
+    code
+
+    ```
+
+    Runs your message in Potatoscript,
+    a custom assembly-like scripting language.
+
+    Discontinued.
+    """
+
+    await m.channel.send('This is a discontinued feature, go away >:[')
+    return
+
+    try:
+        ps = potatoscript.potatoscript('\n'.join(m.content.split('\n')[1:]))
+        out = ps()
+        await m.channel.send(f"__Output:__\n{ps.output}\n__Return:__\n{out}")
+    except Exception as e:
+        await m.channel.send(e)
+
+
+@add_command(['lua', 'luap'], 8)
+async def _(m):
+    """
+    __**WIP**__
+
+    `{prefix}lua`
+    `{prefix}luap`
+    ```
+    code
+    ```
+
+    Runs a safe Lua interpreter with
+    limited capabilities.
+    """
+    from subprocess import run, STDOUT
+    from re import search, DOTALL
+    try:
+        inp = m.content.split(None, 1)[1]
+    except IndexError:
+        await m.channel.send('No code or codeblock found.')
+        return
+    match = search(r"```lua(\n.*)```", inp, DOTALL)
+    if match:
+        inp = match.group(1)
+    else:
+        match = search(r"```(\n.*)```", inp, DOTALL)
+        if match:
+            inp = match.group(1)
+
+
+    o = run(['./luap'], text=True, input=inp + '\n', capture_output=True)
+    await m.channel.send(f'Output:\n{o.stdout}\nErrors:\n{o.stderr}', allowed_mentions=discord.AllowedMentions.none())
+
+
+
+@add_command()
+async def linecount(m):
+    """
+    `{prefix}linecount`
+
+    Sends the bot's source code line count.
+    """
+    await m.channel.send(len(open(__file__, 'r').read().split('\n')) - 1)
 
 
 @add_command()
@@ -182,8 +301,9 @@ async def _(m):
     `{prefix}version`
 
     Shows the bot's version number and name.
+    Shows the version of potatoscript being run.
     """
-    await m.channel.send(f'Potato Overlord version: {version}')
+    await m.channel.send(f'Potato Overlord version: {version}\nPotatoscript Version: {potatoscript.version}')
 
 
 @add_command()
@@ -809,7 +929,10 @@ async def on_message(m):  # Executes on every message
 
             spamDict[m.author.id] += 1
 
-            await comdict['function'](m)
+            try:
+                await comdict['function'](m)
+            except KeyError:
+                await m.channel.send('Command doesn\'t exist!')
 
             await asyncio.sleep(comdict['timeout'])
 
