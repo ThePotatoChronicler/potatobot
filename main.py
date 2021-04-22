@@ -15,7 +15,7 @@ import sqlite3 as sqlite
 database                = sqlite.Connection('data.db')    # Database
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V110 - Wrath'                 # Version
+version                 = 'V113 - Wrath'                  # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
@@ -23,15 +23,19 @@ client                  = discord.ext.commands.Bot(prefix, None, intents=intents
 client.allowed_mentions = defment                         # Sets who can be mentioned
 
 onreadyonce = False # Stops on_ready from firing multiple times
-commandsDict = {}  # Globalization
+commandsDict = {} # Globalization
+reactionDict = {} # My reaction API
+storageDict = {} # Global storage for commands
 spamDict = {} # Preventing spam/bot abuse
 
 
-def add_command(alias=None, timeout=5, **kwargs):
+def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
     def wrapper(function):
         comdict = {
             'function': function,
             'timeout': timeout,
+            'emoji': emoji,
+            'args': args,
             **kwargs
         }
         if alias == None:
@@ -79,6 +83,30 @@ def board(lin, symbol='#', height=10):
 
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
+
+
+@add_command(['execute'])
+async def _(m):
+    """
+    `{prefix}execute`
+
+    ???
+    """
+    order = {
+        1 : "We are number one!",
+        13 : "You won't live past tonight.",
+        45 : "II",
+        69 : "Nice",
+        420 : "( ͡ʘ ͜ʖ ͡ʘ)",
+        7470 : "Tato hath cometh",
+    }
+
+    try:
+        m.channel.send(order[int(m.content.split()[1])])
+    except:
+        raise KeyError()
+
+    raise KeyError()
 
 
 @add_command(['help'], 12)
@@ -620,15 +648,15 @@ async def bogosort(m):
     amount = 0
     if len(m.content.split()) < 2:
         return
-    message = await m.channel.send('Starting bogosort!')
+    message = await m.author.send('Starting bogosort!')
     sort = [
         int(x) if float(x) % 1 == 0 else float(x)
         for x in m.content.split()[1:]
     ]
 
     while not all(x <= y for x, y in zip(sort, sort[1:])):
-        await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``'
-                           )
+        await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``')
+
         shuffle(sort)
         amount += 1
 
@@ -654,7 +682,7 @@ async def bubblesort(m):
     amount = 0
     if len(m.content.split()) < 2:
         return
-    message = await m.channel.send('Starting bubblesort!')
+    message = await m.author.send('Starting bubblesort!')
     sort = [
         int(x) if float(x) % 1 == 0 else float(x)
         for x in m.content.split()[1:]
@@ -690,7 +718,7 @@ async def insertionsort(m):
     amount = 0
     if len(m.content.split()) < 2:
         return
-    message = await m.channel.send('Starting insertionsort!')
+    message = await m.author.send('Starting insertionsort!')
     sort = [
         int(x) if float(x) % 1 == 0 else float(x)
         for x in m.content.split()[1:]
@@ -918,7 +946,7 @@ async def on_message(m):  # Executes on every message
             return
 
         if m.content.startswith(prefix):
-            if spamDict.setdefault(m.author.id, 0) >= 2:
+            if spamDict.setdefault(m.author.id, 0) >= 3:
                 return
 
             try:
@@ -930,7 +958,10 @@ async def on_message(m):  # Executes on every message
             spamDict[m.author.id] += 1
 
             try:
-                await comdict['function'](m)
+                message = await comdict['function'](m)
+                if comdict['emoji']:
+                    reactionDict[message.id] = comdict['function']
+
             except KeyError:
                 await m.channel.send('Command doesn\'t exist!')
 
@@ -943,6 +974,18 @@ async def on_message(m):  # Executes on every message
         if m.author.id == 185421198094499840 and m.content == 'close':
             m.channel.send('Closing.')
             await client.close()
+
+
+@client.event
+async def on_reaction_add(r, u):
+    if u == client.user:
+        return
+
+    if r.message.id in reactionDict:
+        delete = reactionDict[r.message.id](r.message, r, u)
+
+        if delete:
+            del reactionDict[r.message.id]
 
 
 @client.event
