@@ -13,11 +13,14 @@ import datetime
 import sqlite3 as sqlite
 
 database                = sqlite.Connection('data.db')    # Database
+user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V113 - Wrath'                  # Version
+version                 = 'V119 - Wrath'                  # Version
+potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
+intents.presences       = True                            # So that the bot can access statusses
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
 client                  = discord.ext.commands.Bot(prefix, None, intents=intents) # Create client
 client.allowed_mentions = defment                         # Sets who can be mentioned
@@ -81,6 +84,10 @@ def board(lin, symbol='#', height=10):
         return '\n' + (symbol + '\n') * 10
 
 
+def clean_filename(s : str):
+    return s.replace('/', '_').replace('.', '_').replace('*', '_')
+
+
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
 
@@ -88,21 +95,58 @@ def boardgen(lin, symbol='#', symbolv='@', height=10):
 @add_command(['execute'])
 async def _(m):
     """
-    `{prefix}execute`
+    `{prefix}execute ?`
 
     ???
     """
+    from inspect import cleandoc
     order = {
         1 : "We are number one!",
+        5 : "A new potato is summoned!",
+        7 : "Couldn't hold me back",
+        10 : "On harder mode!",
         13 : "You won't live past tonight.",
+        42 : "Shiva Gautama Christ-chan",
         45 : "II",
+        64 : "Stack",
+        66 : "Disabled devil",
+        68 : "So close",
         69 : "Nice",
+        70 : "Just missed it",
         420 : "( ͡ʘ ͜ʖ ͡ʘ)",
+        475 : "It's a biiiiiiiiiinge compilation",
+        666 : "]:->",
+        1337 : "Did you install Kali Linux?",
+        1945 : cleandoc("""
+                        ⠄⠄⠄⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⡄⠄⠄⠄⠄⠄⠄⠄⠄⠄
+                        ⠄⠄⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⠄⠄⠄⠄⠄⠄⠄⠄
+                        ⠄⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠄⠄⠄⠄⠄⠄
+                        ⣀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⠄⠄⠄⠄⠄⠄
+                        ⢻⣿⣿⣿⣿⣿⣿⣿⡟⢿⠿⠿⠢⡈⠻⠿⢿⡿⣿⣿⣿⣿⣿⣿⡆⠄⠄⠄⠄⠄
+                        ⢨⣿⣿⣿⣿⣿⣿⣿⣷⡆⠄⠄⠄⠄⠙⠳⣦⣌⣉⡛⠻⠿⠿⢏⡀⠄⠄⠄⠄⠄
+                        ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣁⠄⢀⠄⠄⠄⠄⠄⠙⣻⣿⣿⣧⡀⠄⠈⠑⠢⢀⠄⠄
+                        ⠄⠄⠈⠉⠋⠙⣿⣿⠉⠠⡲⣶⠢⠄⠄⠄⡄⢾⢛⣿⣯⢽⣿⣷⣄⠄⠄⠄⠈⠒
+                        ⠄⠄⠄⠄⠄⢀⣿⣿⠄⠄⠄⠄⠄⠄⠄⠈⣕⠘⠋⢸⡇⠈⠛⠿⢿⣷⣦⡀⠄⢀
+                        ⠄⠄⠄⠄⠄⠘⣿⣿⣆⡀⠄⠄⠄⠄⠄⣀⡍⣀⣀⡰⠄⠄⠄⠄⠄⠙⢯⣿⣿⣿
+                        ⠄⠄⠄⠄⠄⠄⠹⣿⣿⣧⠗⡚⠚⠄⠄⠙⢿⢟⡿⠁⠄⠄⠄⠄⠄⠄⠄⠈⠁⠄
+                        ⠄⠄⠄⠄⠄⠄⠄⠉⢿⣿⡀⠄⠄⠄⠄⠄⢼⡞⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄
+                        ⠄⠄⠄⠄⠄⠄⠄⠄⠈⢻⣇⠄⠄⠤⠤⠴⡿⠁⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄
+                        ⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠙⠳⣤⡤⠤⠶⠃⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄⠄
+                        """),
+        2004 : "Terrible tragedy",
+        2012 : "The end of the world?",
+        2020 : "We don't have enough toilet paper",
+        2021 : "We still don't have enough toilet paper",
+        2077 : "Delayed",
+        6666 : "Woah, too evil!",
         7470 : "Tato hath cometh",
+        80082 : "( ͡° ͜ʖ ͡°)",
+        345431 : "WAY AWAY AWAY FROM HERE I'LL BE, WAY AWAY AWAY SO YOU CAN SEE",
     }
 
     try:
-        m.channel.send(order[int(m.content.split()[1])])
+        await m.channel.send(order[int(m.content.split()[1])])
+        return
     except:
         raise KeyError()
 
@@ -257,38 +301,97 @@ async def _(m):
         await m.channel.send(e)
 
 
-@add_command(['lua', 'luap'], 8)
+@add_command(['lua'], 8)
 async def _(m):
     """
     __**WIP**__
 
     `{prefix}lua`
-    `{prefix}luap`
     ```
     code
     ```
 
+    `{prefix}lua save name`
+    ```
+    code
+    ```
+
+    `{prefix}lua run name`
+    input
+
     Runs a safe Lua interpreter with
     limited capabilities.
+
+    When saving and running code, the global value "input"
+    will be set by the user input.
+
+    You don't wanna see the source code for this,
+    it's a total mess.
     """
     from subprocess import run, STDOUT
     from re import search, DOTALL
-    try:
-        inp = m.content.split(None, 1)[1]
-    except IndexError:
-        await m.channel.send('No code or codeblock found.')
-        return
-    match = search(r"```lua(\n.*)```", inp, DOTALL)
-    if match:
-        inp = match.group(1)
+    from time import time as unix_time
+    from os import remove as removefile
+    from asyncio import create_subprocess_exec as subexec
+    from asyncio.subprocess import PIPE
+
+    code_file = f'{user_code_file}__process-{unix_time()}__'
+
+    inp = m.content.split(None, 1)
+    if len(inp) == 1:
+        inp = ''
     else:
-        match = search(r"```(\n.*)```", inp, DOTALL)
+        inp = inp[1]
+        match = search(r"```lua(\n.*)```", inp, DOTALL)
         if match:
             inp = match.group(1)
+        else:
+            match = search(r"```(\n.*)```", inp, DOTALL)
+            if match:
+                inp = match.group(1)
+            else:
+                inp = ''
 
+    first_line = m.content.split('\n', 1)[0].split()
 
-    o = run(['./luap'], text=True, input=inp + '\n', capture_output=True)
-    await m.channel.send(f'Output:\n{o.stdout}\nErrors:\n{o.stderr}', allowed_mentions=discord.AllowedMentions.none())
+    if len(first_line) >= 3:
+        user_code_save = user_code_file + clean_filename(' '.join(first_line[2:]))
+        if first_line[1] == 'save':
+            if not inp:
+                await m.channel.send('No codeblock found!')
+                return
+            with open(code_file, 'w') as luacodefile:
+                luacodefile.write(inp)
+            cor = await subexec('./luac', '-o', user_code_save, code_file, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            await cor.wait()
+            removefile(code_file)
+            return
+        if first_line[1] == 'run':
+            split = m.content.split('\n', 1)
+            if len(split) == 1:
+                inp = ''
+            else:
+                inp = split[1]
+            cor = await subexec('./luap', user_code_save, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            stdout, stderr = await cor.communicate(bytes(inp, 'utf-8'))
+            await m.channel.send(f'Output:\n{stdout.decode()}\nErrors:\n{stderr.decode()}', allowed_mentions=discord.AllowedMentions.none())
+            return
+        await m.channel.send('No known action')
+        return
+    else:
+        if inp:
+            with open(code_file, 'w') as luacodefile:
+                luacodefile.write(inp)
+            cor = await subexec('./luap', code_file, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            stdout, stderr = await cor.communicate(bytes())
+            removefile(code_file)
+            await m.channel.send(f'Output:\n{stdout.decode()}\nErrors:\n{stderr.decode()}', allowed_mentions=discord.AllowedMentions.none())
+            return
+        else:
+            await m.channel.send('No codeblock found!')
+            return
+
+    await m.channel.send('Found nothing to do!')
 
 
 
@@ -548,6 +651,39 @@ async def xkcd(m):
         except ValueError:
             await m.channel.send(
                 f'``{m.content.split()[1]}`` isn\'t an integer!')
+
+
+@add_command(["potato"])
+async def _(m):
+    """
+    `{prefix}potato`
+
+    Sends contact info about Potato, my father <3
+    """
+
+    # Gets me :)
+    p = client.get_guild(752177122998747199).get_member(potatoid)
+    info = f"""
+    Discord: {p.name}#{p.discriminator}
+    [Github](https://github.com/ThePotatoChronicler)
+    [Reddit](https://www.reddit.com/user/Potato-of-All-Trades)
+    [Discord Server](https://discord.gg/EWQPNfddmz)
+    """
+    from inspect import cleandoc
+    embed = discord.Embed(title="Contact Information",
+                          url="https://github.com/ThePotatoChronicler",
+                          description=cleandoc(info))
+    embed.set_image(url=str(p.avatar_url))
+
+    footer = "Hello world!"
+
+    for activity in p.activities:
+        if isinstance(activity, discord.CustomActivity):
+            footer = activity
+            break
+    embed.set_footer(text=footer, icon_url=str(client.user.avatar_url))
+
+    await m.channel.send(embed=embed)
 
 
 @add_command()
