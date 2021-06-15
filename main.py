@@ -16,7 +16,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V119 - Wrath'                  # Version
+version                 = 'V120 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -31,6 +31,13 @@ reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
 spamDict = {} # Preventing spam/bot abuse
 
+class Command():
+    """
+    A wrapper around a python function.
+    """
+    from typing import Coroutine as coro
+    def __init__(func : coro, /):
+        pass
 
 def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
     def wrapper(function):
@@ -51,7 +58,7 @@ def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
 
 def save_sort_to_db(t, m_id, c_id, a, l):
     li = ' '.join(str(i) for i in l)
-    dbcursor.execute('SELECT message FROM sorts WHERE message = ?', [m_id])
+    dbcursor.execute('SELECT message FROM sorts WHERE message = ?', (m_id, ))
 
     if dbcursor.fetchone():
         dbcursor.execute('UPDATE sorts SET amount = ?, list = ? WHERE message = ?', (a, li, m_id))
@@ -84,13 +91,80 @@ def board(lin, symbol='#', height=10):
         return '\n' + (symbol + '\n') * 10
 
 
+# This will definitely not go horribly wrong eventually
 def clean_filename(s : str):
+    """
+    A really bad function to clean a filename
+    from messing with the filesystem.
+    """
     return s.replace('/', '_').replace('.', '_').replace('*', '_')
 
 
+# Why do I keep this here???
+# I have no plans of making it anytime soon, so why . _.
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
 
+
+@add_command(['quote'])
+async def _(m : discord.Message):
+    """
+    `{prefix}quote id`
+
+    Retrieves a quote from the entered id.
+    """
+    if len(m.content.split()) < 2:
+        await m.channel.send("ID is required")
+        return
+
+    try:
+        # Cannot use variable id
+        # because of builtin
+        quoteid = int(m.content.split()[1])
+    except ValueError:
+        await m.channel.send("Invalid ID!")
+        return
+
+    if quoteid < 0:
+        await m.channel.send("ID must be an integer higher or equal to 0")
+        return
+
+    dbcursor.execute("SELECT quote FROM quotes WHERE id = ?", (quoteid, ))
+    quote = dbcursor.fetchone()
+    if quote == None:
+        await m.channel.send("No such quote exists!")
+    else:
+        await m.channel.send(quote[0])
+
+@add_command(['addquote'])
+async def _(m : discord.Message):
+    """
+    `{prefix}addquote id quote`
+
+    Adds a quote to the database at the entered id,
+    adding or overwriting the quote
+    that is already at that id.
+    """
+    if len(m.content.split()) < 3:
+        await m.channel.send("Not enough arguments!")
+        return
+
+    try:
+        # Cannot use variable id
+        # because of builtin
+        quoteid = int(m.content.split()[1])
+    except ValueError:
+        await m.channel.send("Invalid ID!")
+        return
+
+    if quoteid < 0:
+        await m.channel.send("ID must be an integer higher or equal to 0")
+        return
+
+    quote = m.content.split(None, 2)[2]
+
+    dbcursor.execute("REPLACE INTO quotes(id, quote) VALUES(?, ?)", (quoteid, quote))
+    database.commit()
 
 @add_command(['execute'])
 async def _(m):
@@ -141,6 +215,7 @@ async def _(m):
         6666 : "Woah, too evil!",
         7470 : "Tato hath cometh",
         80082 : "( ͡° ͜ʖ ͡°)",
+        177013 : "No, stop, don't, please, don't *cries*",
         345431 : "WAY AWAY AWAY FROM HERE I'LL BE, WAY AWAY AWAY SO YOU CAN SEE",
     }
 
