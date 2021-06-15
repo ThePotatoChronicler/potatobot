@@ -16,7 +16,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V120 - Wrath'                  # Version
+version                 = 'V121 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -403,7 +403,6 @@ async def _(m):
     You don't wanna see the source code for this,
     it's a total mess.
     """
-    from subprocess import run, STDOUT
     from re import search, DOTALL
     from time import time as unix_time
     from os import remove as removefile
@@ -957,7 +956,6 @@ async def insertionsort(m):
         f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
     )
     remove_sort_from_db(message.id)
-
 
 
 
