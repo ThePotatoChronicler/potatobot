@@ -7,7 +7,6 @@ import potatoscript
 import art
 import asyncio
 import discord
-import discord.ext.commands
 import requests
 import datetime
 import sqlite3 as sqlite
@@ -16,14 +15,15 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V121 - Wrath'                  # Version
+version                 = 'V127 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
-client                  = discord.ext.commands.Bot(prefix, None, intents=intents) # Create client
-client.allowed_mentions = defment                         # Sets who can be mentioned
+client                  = discord.Client(                 # Create client
+                                intents=intents,
+                                allowed_mentions=defment) # Sets who can be mentioned
 
 onreadyonce = False # Stops on_ready from firing multiple times
 commandsDict = {} # Globalization
@@ -109,45 +109,121 @@ def boardgen(lin, symbol='#', symbolv='@', height=10):
 @add_command(['quote'])
 async def _(m : discord.Message):
     """
-    `{prefix}quote id`
+    `{prefix}quote [id]`
 
     Retrieves a quote from the entered id.
+    If no id is entered, it finds a quote at random.
     """
-    if len(m.content.split()) < 2:
-        await m.channel.send("ID is required")
-        return
 
-    try:
-        # Cannot use variable id
-        # because of builtin
-        quoteid = int(m.content.split()[1])
-    except ValueError:
-        await m.channel.send("Invalid ID!")
-        return
+    argin = (len(m.content.split()) > 1)
 
-    if quoteid < 0:
-        await m.channel.send("ID must be an integer higher or equal to 0")
-        return
+    if argin:
+        try:
+            # Cannot use variable id
+            # because of builtin
+            quoteid = int(m.content.split()[1])
+        except ValueError:
+            await m.channel.send("Invalid ID!")
+            return
 
-    dbcursor.execute("SELECT quote FROM quotes WHERE id = ?", (quoteid, ))
+        if quoteid < 0:
+            await m.channel.send("ID must be an integer higher or equal to 0")
+            return
+
+        dbcursor.execute("SELECT quote FROM quotes WHERE id = ?", (quoteid, ))
+
+    else: # Selects a random quote
+        dbcursor.execute("SELECT quote FROM quotes ORDER BY RANDOM() LIMIT 1")
+
     quote = dbcursor.fetchone()
     if quote == None:
         await m.channel.send("No such quote exists!")
     else:
         await m.channel.send(quote[0])
 
+
+@add_command(['quotes'], 15)
+async def _(m : discord.Message):
+    """
+    `{prefix}quotes [id]`
+
+    Returns N quotes, close to the entered id.
+    Returns N random quotes if no id is entered.
+        (These won't be close to eachother)
+
+    N is a static value set by hand,
+    who knows what it's set to right now ;-;
+    """
+    argin = (len(m.content.split()) > 1)
+    returnamount = 10
+    if argin:
+        try:
+            # Cannot use variable id
+            # because of builtin
+            quoteid = int(m.content.split()[1])
+        except ValueError:
+            await m.channel.send("Invalid ID!")
+            return
+
+        dbcursor.execute(f"SELECT quote FROM quotes WHERE id <  {quoteid} LIMIT {returnamount // 2}")
+        retquotes = dbcursor.fetchall()
+        returnamount -= len(retquotes)
+        dbcursor.execute(f"SELECT quote FROM quotes WHERE id >= {quoteid} LIMIT {returnamount}")
+        retquotes += dbcursor.fetchall()
+
+    else:
+        dbcursor.execute(f"SELECT quote FROM quotes ORDER BY RANDOM() LIMIT {returnamount}")
+        retquotes = dbcursor.fetchall()
+
+    success = False
+    retmes = ""
+    for quote in retquotes:
+        if (len(retmes) + len(quote[0])) > 2000:
+            break
+        retmes = retmes + quote[0] + "\n"
+    else:
+        success = True
+
+    await m.channel.send(retmes)
+    if not success:
+        await m.channel.send("⚠️ Only a partial result has been returned, since the quotes were too long for one message")
+
+
 @add_command(['addquote'])
 async def _(m : discord.Message):
     """
-    `{prefix}addquote id quote`
+    `{prefix}addquote id [quote]`
 
     Adds a quote to the database at the entered id,
     adding or overwriting the quote
     that is already at that id.
+
+    You can reply to a message with this command,
+    in which case it will be added as a quote.
     """
-    if len(m.content.split()) < 3:
-        await m.channel.send("Not enough arguments!")
-        return
+
+    if m.reference:
+        if len(m.content.split()) < 2:
+            await m.channel.send("Not enough arguments!")
+            return
+
+        cachedm = m.reference.cached_message
+        if cachedm != None:
+            quote = "\n".join(["> " + line for line in cachedm.clean_content.split('\n')]) + "\n" + f"- {cachedm.author.display_name}"
+        else:
+            # 'tis a mess
+            cachedm = (await (await client.fetch_channel(m.reference.channel_id)).fetch_message(m.reference.message_id))
+            if cachedm != None:
+                quote = "\n".join(["> " + line for line in cachedm.clean_content.split('\n')]) + "\n" + f"- {cachedm.author.display_name}"
+            else:
+                await m.channel.send("Couldn't get that message, sorry!")
+                return
+    else:
+        if len(m.content.split()) < 3:
+            await m.channel.send("Not enough arguments!")
+            return
+
+        quote = m.content.split(None, 2)[2]
 
     try:
         # Cannot use variable id
@@ -161,10 +237,14 @@ async def _(m : discord.Message):
         await m.channel.send("ID must be an integer higher or equal to 0")
         return
 
-    quote = m.content.split(None, 2)[2]
 
-    dbcursor.execute("REPLACE INTO quotes(id, quote) VALUES(?, ?)", (quoteid, quote))
+    try:
+        dbcursor.execute("REPLACE INTO quotes(id, quote) VALUES(?, ?)", (quoteid, quote))
+    except OverflowError:
+        await m.channel.send("That ID is too thicc")
+        return
     database.commit()
+    await m.add_reaction("👍")
 
 @add_command(['execute'])
 async def _(m):
