@@ -24,9 +24,9 @@ static void* luap_allocateMemory(void *ud, void *ptr, size_t osize, size_t nsize
     }
 }
 
-static void luap_errout(int errnum) {
-    if (errnum == LUA_OK) {return;}
-    char *err;
+char* luap_errout(int errnum) {
+    if (errnum == LUA_OK) {return "Ok";}
+    char* err;
     switch (errnum) {
         case(LUA_ERRRUN):
             err = "RuntimeError";
@@ -51,11 +51,11 @@ static void luap_errout(int errnum) {
             break;
     }
 
-    fprintf(stderr, "%s\n", err);
+    return err;
 }
 
-int main() {
-    char source[2020];
+int main(int argc, char** argv) {
+    char source[4040];
     unsigned int ud = 0;
 
     fread(source, sizeof(source), sizeof(source[0]), stdin);
@@ -66,7 +66,8 @@ int main() {
 
     /* This part removes some
      * unwanted functions from
-     * the base library.       */
+     * the base library.
+     */
     lua_settop(L, 16);
     lua_setglobal(L, "collectgarbage");
     lua_setglobal(L, "dofile");
@@ -74,10 +75,19 @@ int main() {
     lua_setglobal(L, "loadfile");
     lua_setglobal(L, "require");
     lua_settop(L, 0); // Clears stack
-    //luaL_dostring(L, source);
-    luaL_loadstring(L, source);
+
+    if (argc == 1) {
+        luaL_loadstring(L, source);
+    } else {
+        lua_pushstring(L, source);
+        lua_setglobal(L, "input");
+        luaL_loadfile(L, argv[1]);
+    }
+
     int status = lua_pcall(L, 0, LUA_MULTRET, 0);
-    luap_errout(status);
+    if (status != LUA_OK) {
+        fprintf(stderr, "%s - %s", luap_errout(status), lua_tostring(L, -1));
+    }
     lua_close(L);
 }
 

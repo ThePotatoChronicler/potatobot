@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V127 - Wrath'                  # Version
+version                 = 'V135 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -30,6 +30,7 @@ commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
 spamDict = {} # Preventing spam/bot abuse
+renameList = [] # Stops renameall stacking
 
 class Command():
     """
@@ -104,6 +105,84 @@ def clean_filename(s : str):
 # I have no plans of making it anytime soon, so why . _.
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
+
+@add_command(['renameall'])
+async def _(m : discord.Message):
+    """
+    `{prefix}renameall format`
+
+    __**THIS IS A REALLY STUPID COMMAND**__
+
+    Useable by anyone with the \"Manage Nicknames\" permission
+    and Nitro Boosters
+
+    Renames everyone in the guild,
+    with some optional formatting.
+
+    Using curly braces {{}} you can add special formatting:
+        ranew - **Ran**dom **e**nglish **w**ord
+        Ranew - **Ran**dom **e**nglish **w**ord
+                with first letter capitalized
+
+    This command will take a while to process with more people
+    """
+
+    if (not m.author.guild_permissions.manage_nicknames) and (m.author.premium_since is None):
+        await m.channel.send("You lack the permissions to use this command!")
+        return
+
+    form : str = ' '.join(m.content.split()[1:])
+
+    # I can check this part with just "if not",
+    # but I'm making this explicit to shit on
+    # JS programmers, you're welcome
+    if form == '':
+        await m.channel.send("No format given!")
+        return
+
+    if len(form) > 26:
+        await m.channel.send("The format must be less than 26 characters!")
+        return
+
+    if m.guild.id in renameList:
+        await m.channel.send("A renameall command is already in progress, please wait until it finishes!")
+        return
+
+    renameList.append(m.guild.id)
+
+    await m.channel.send("Starting the rename, this might take a while!")
+
+    async with m.channel.typing():
+
+        from random import randint
+
+        # Yes the filename is hard-coded don't judge me
+        with open("english_dict_a.txt") as f:
+            flen : int = f.seek(0, 2)
+
+            for i, member in enumerate(m.guild.members):
+                error : bool = False
+                name : str = ''
+
+                # This might become an infinite loop, but unlikely
+                # TODO: Make this better and more flexible,
+                #       makes it hard to add other formatting options
+                while len(name) > 32 or name == '':
+                    f.seek(randint(0, flen))
+                    try:
+                        name = form.format(f.read(100).split("\n", 2)[1])
+                    except IndexError:
+                        error = True
+                        break
+                if error:
+                    continue
+                try:
+                    await member.edit(nick=name, reason=f"{m.author} used the renameall command")
+                except discord.errors.Forbidden:
+                    pass
+
+    renameList.remove(m.guild.id)
+    await m.channel.send("Renaming finished!")
 
 
 @add_command(['quote'])
@@ -309,7 +388,7 @@ async def _(m):
 
 
 @add_command(['help'], 12)
-async def _(m):
+async def _(m : discord.Message):
     """
     `{prefix}help (commandname)`
 
@@ -627,7 +706,7 @@ async def tmp(m):
     Will not function if no /tmp category exists.
     Grants special permissions to the command's author in the created channel.
     """
-    if m.channel.category.name == '/tmp':
+    if m.channel.category != None and m.channel.category.name == '/tmp':
         await m.channel.edit(name='_'.join(m.content.split()[1:]))
     else:
         categ = None
@@ -847,9 +926,7 @@ async def cat(m):
 
     Shows a random picture of a cat.
     """
-    await m.channel.send(
-        requests.get('https://api.thecatapi.com/v1/images/search').json()[0]
-        ['url'])
+    await m.channel.send(requests.get('https://api.thecatapi.com/v1/images/search').json()[0]['url'])
 
 
 @add_command()
@@ -859,10 +936,16 @@ async def dog(m):
 
     Shows a random picture of a dog.
     """
-    await m.channel.send(
-        requests.get('https://api.thedogapi.com/v1/images/search').json()[0]
-        ['url'])
+    await m.channel.send(requests.get('https://api.thedogapi.com/v1/images/search').json()[0]['url'])
 
+@add_command(['fox'])
+async def _(m):
+    """
+    `{prefix}fox`
+
+    Shows a random picture of a fox.
+    """
+    await m.channel.send(requests.get('https://randomfox.ca/floof/').json()['image'])
 
 @add_command(timeout=600)
 async def ownermail(m):
@@ -1094,9 +1177,12 @@ async def on_ready():  # Executes when bot connects
 
         # Bogosort
         async def f1(m_id, c_id, a, l):
+            try:
+                message = client.get_channel(c_id).get_partial_message(m_id)
+            except AttributeError:
+                return
             from random import shuffle
             amount = a
-            message = client.get_channel(c_id).get_partial_message(m_id)
             sort = [
                 int(x) if float(x) % 1 == 0 else float(x)
                 for x in l.split(' ')
@@ -1209,10 +1295,8 @@ async def on_message(m):  # Executes on every message
     nomentions = discord.AllowedMentions.none()
 
     # Checks if sent from a guild
-    if isinstance(m.channel,
-                  discord.TextChannel):  # Checks if it was sent in a guild
-        if (m.channel.name == 'letter_wars' or m.channel.name == 'letter-wars'
-            ) and not len(m.content.strip()) == 1:
+    if isinstance(m.channel, discord.TextChannel):
+        if (m.channel.name == 'letter_wars' or m.channel.name == 'letter-wars') and not len(m.content.strip()) == 1:
             await m.delete()
             return
 
