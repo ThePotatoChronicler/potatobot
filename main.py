@@ -106,6 +106,11 @@ def clean_filename(s : str):
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
 
+
+
+# TODO: This command could use a rewrite, without the use of
+#       str.format, so that people can't abuse it, potentially
+#       making it an infinite loop
 @add_command(['renameall'])
 async def _(m : discord.Message):
     """
@@ -488,7 +493,10 @@ async def _(m):
 
     i = 0
     while i < int(m.content.split()[1]):
-        await m.channel.send(' '.join(m.content.split(' ')[2:]))
+        try:
+            await m.channel.send(' '.join(m.content.split(' ')[2:]))
+        except discord.errors.NotFound:
+            return
         i += 1
 
 
