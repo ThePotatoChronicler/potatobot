@@ -15,13 +15,13 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V135 - Wrath'                  # Version
+version                 = 'V137 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
 defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
-client                  = discord.Client(                 # Create client
+client : discord.Client = discord.Client(                 # Create client
                                 intents=intents,
                                 allowed_mentions=defment) # Sets who can be mentioned
 
@@ -106,6 +106,46 @@ def clean_filename(s : str):
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
 
+
+# There are probably a few edge cases in this function,
+# let's hope I am not bitten in the ass by them
+@add_command(['fillemoji'])
+async def _(m : discord.Message):
+    """
+    `{prefix}fillemoji`
+
+    Useable by anyone wit the \"Manage Emoji\" permission
+
+    Fills up the rest of the emoji slots with emojis from other
+    servers that the bot is in.
+    """
+
+    if not m.author.guild_permissions.manage_emojis:
+        await m.channel.send("You lack the permissions to use this command")
+        return
+
+    used_emoji = []
+    guilds = client.guilds.copy()
+    guilds.remove(m.guild)
+    guilds_len = len(guilds) - 1
+    reason = f"{m.author} used the fillemoji command"
+
+    from random import randint
+
+    await m.channel.send("Filling all remaining emoji slots, this might take a while!")
+
+    async with m.channel.typing():
+
+        for _ in range(len(m.guild.emojis), m.guild.emoji_limit):
+            e : discord.Emoji = None
+            while e == None or e.id in used_emoji or e.animated:
+                g : discord.Guild = guilds[randint(0, guilds_len)]
+                e : discord.Emoji = g.emojis[randint(0, len(g.emojis) - 1)]
+            used_emoji.append(e.id)
+            b = await e.url.read()
+            await m.guild.create_custom_emoji(name=e.name, image=b, reason=reason)
+
+    await m.channel.send("Finished filling up all the emoji slots")
 
 
 # TODO: This command could use a rewrite, without the use of
@@ -457,7 +497,8 @@ async def _(m):
     `{prefix}emojipurge`
     `{prefix}emojipurge true`
 
-    Server owner only.
+    Requires the \"Manage Emojis\" permission to use
+
     Deletes all emojis from the server,
     *except* those whose names start with `_`.
     To also delete animated emojis, add true.
@@ -465,20 +506,24 @@ async def _(m):
 
     __**THIS ACTION CANNOT BE TAKEN BACK.**__
     """
-    if m.guild.owner.id == m.author.id:
-        await m.channel.send("Purging.")
-        animated = False
+    if not m.author.guild_permissions.manage_emojis:
+        await m.channel.send("You lack the permissions to use this")
+        return
 
-        if len(m.content.split()) >= 2:
-            if m.content.split()[1] == "true":
-                animated = True
+    await m.channel.send("Purging all emojis, it could take a while!")
+    animated = False
 
+    if len(m.content.split()) >= 2:
+        if m.content.split()[1] == "true":
+            animated = True
+
+    async with m.channel.typing():
         for emoji in m.guild.emojis:
             if not emoji.name.startswith('_'):
                 if (not emoji.animated) or (emoji.animated and animated):
                     await emoji.delete(reason=f"Command executed by {m.author.name}#{m.author.discriminator}")
-    else:
-        await m.channel.send("You're not the owner!", delete_after=3)
+
+    await m.channel.send("Emoji purge finished!")
 
 
 @add_command(['spam'])
@@ -1138,6 +1183,10 @@ async def on_ready():  # Executes when bot connects
         return
 
     onreadyonce = True
+
+    # Yes
+
+    # Yes
 
     await client.change_presence(
         activity=discord.Activity(
