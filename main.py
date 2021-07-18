@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V141 - Wrath'                  # Version
+version                 = 'V142 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -171,6 +171,8 @@ async def _(m : discord.Message):
     Useable by anyone with the \"Manage Nicknames\" permission
     and Nitro Boosters
 
+    If format is exactly '%clear%', clears all nicknames.
+
     Renames everyone in the guild,
     with some optional formatting.
 
@@ -197,8 +199,27 @@ async def _(m : discord.Message):
     # but I'm making this explicit to shit on
     # JS programmers, you're welcome
     if form == '':
-        await m.channel.send("No format given!")
+        await m.channel.send("No format specified!")
         return
+
+    elif form == '%clear%':
+        nameschanged : int = 0
+        renameList.append(m.guild.id)
+        await m.channel.send("Clearing all nicknames, this might take a while!")
+
+        async with m.channel.typing():
+            for member in m.guild.members:
+                try:
+                    await member.edit(nick=None, reason=f"{m.author} used the renameall command to clear all nicknames")
+                except discord.errors.Forbidden:
+                    pass
+                else:
+                    nameschanged += 1
+
+        renameList.remove(m.guild.id)
+        await m.channel.send(f"Nickname clearing finished, cleared nicknames of {nameschanged} out of {len(m.guild.members)} member{'' if len(m.guild.members) == 1 else 's'}")
+        return
+
 
     if m.guild.id in renameList:
         await m.channel.send("A renameall command is already in progress, please wait until it finishes!")
@@ -222,13 +243,6 @@ async def _(m : discord.Message):
         minchars += engwordsneeded
         minchars += len((*filter(lambda m : m == '%e' or m == '%E', re.findall(r"%[a-zA-Z%]", form)),)) * enumlength
 
-        print(minchars)
-        print(form)
-        print(len(form))
-        print(re.sub("%[a-zA-Z%]", "", form))
-        print(len(re.sub("%[a-zA-Z%]", "", form)))
-        print(minchars + len(re.sub("%[a-zA-Z]", "", form)))
-
         if (minchars + len(re.sub("%[a-zA-Z]", "", form))) > maxchars:
             renameList.remove(m.guild.id)
             await m.channel.send(f"Name would be longer than Discord allows ({maxchars})")
@@ -240,6 +254,8 @@ async def _(m : discord.Message):
         engquery : str = ""
         if engwordsneeded > 0:
             engquery = f"SELECT word FROM words WHERE LENGTH(word) <= {((maxchars - (len(form) - engwordsneeded)) // engwordsneeded) + 1} ORDER BY RANDOM() LIMIT {engwordsneeded}"
+
+        nameschanged : int = 0
 
         for i, member in enumerate(m.guild.members):
 
@@ -270,9 +286,10 @@ async def _(m : discord.Message):
                 pass
             else:
                 enumprogress += 1
+                nameschanged += 1
 
     renameList.remove(m.guild.id)
-    await m.channel.send("Renaming finished!")
+    await m.channel.send(f"Renaming finished, changed nicknames of {nameschanged} out of {len(m.guild.members)} member{'' if len(m.guild.members) == 1 else 's'}")
 
 
 @add_command(['quote'])
