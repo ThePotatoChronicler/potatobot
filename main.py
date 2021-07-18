@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V139 - Wrath'                  # Version
+version                 = 'V140 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -182,7 +182,7 @@ async def _(m : discord.Message):
         This is %%a
         Will result in name "This is %%a"
 
-    This command will take more itme to process with more people
+    This command will take more time to process with more people
     """
 
     if (not m.author.guild_permissions.manage_nicknames) and (m.author.premium_since is None):
