@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V140 - Wrath'                  # Version
+version                 = 'V141 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -177,6 +177,8 @@ async def _(m : discord.Message):
     There is formatting, which can be added using `%` and a character:
         a - Random english word
         A - Random english word, first letter capitalized
+        e - Enumerates all users
+        E - Enumerates all users, equally long leading zeroes
     To include a literal %, use `%%`
     To escape a formatting sequence, use `%%`, example:
         This is %%a
@@ -207,14 +209,33 @@ async def _(m : discord.Message):
     import re
 
     renameList.append(m.guild.id)
-    await m.channel.send("Starting the rename, this might take a while!")
 
     async with m.channel.typing():
         minchars : int = 0 # Minimum required characters for formatting
         cursor : sqlite.Cursor = engdict_database.cursor()
-        engwordsneeded : int = len(re.findall(r"%[aA]", form))
-        minchars += engwordsneeded
+        engwordsneeded : int = len((*filter(lambda m : m == '%a' or m == '%A', re.findall(r"%[a-zA-Z%]", form)),))
         engwords : list[str] = [] # List of random english words for further processing
+        enumprogress : int = 0
+        enumlength : int = len(str(len(m.guild.members)))
+
+        minchars -= len((*filter(lambda m : m == '%%', re.findall(r"%[a-zA-Z%]", form)),))
+        minchars += engwordsneeded
+        minchars += len((*filter(lambda m : m == '%e' or m == '%E', re.findall(r"%[a-zA-Z%]", form)),)) * enumlength
+
+        print(minchars)
+        print(form)
+        print(len(form))
+        print(re.sub("%[a-zA-Z%]", "", form))
+        print(len(re.sub("%[a-zA-Z%]", "", form)))
+        print(minchars + len(re.sub("%[a-zA-Z]", "", form)))
+
+        if (minchars + len(re.sub("%[a-zA-Z]", "", form))) > maxchars:
+            renameList.remove(m.guild.id)
+            await m.channel.send(f"Name would be longer than Discord allows ({maxchars})")
+            return
+
+        await m.channel.send("Starting the rename, this might take a while!")
+
 
         engquery : str = ""
         if engwordsneeded > 0:
@@ -223,8 +244,6 @@ async def _(m : discord.Message):
         for i, member in enumerate(m.guild.members):
 
             engwords = cursor.execute(engquery).fetchall()
-            if engwords == []:
-                engwords = [0]
             usedwords = 0
 
             def subfunc(match : re.Match):
@@ -233,8 +252,10 @@ async def _(m : discord.Message):
                 let : str = match.group(1)
                 sd : dict = {
                     '%' : '%',
-                    'a' : engwords[usedwords][0],
-                    'A' : engwords[usedwords][0].capitalize(),
+                    'a' : engwords[usedwords][0] if usedwords < len(engwords) else "",
+                    'A' : engwords[usedwords][0].capitalize() if usedwords < len(engwords) else "",
+                    'e' : str(enumprogress),
+                    'E' : str(enumprogress).zfill(enumlength),
                 }
                 if let == 'a' or let == 'A':
                     usedwords += 1
@@ -247,6 +268,8 @@ async def _(m : discord.Message):
                 await member.edit(nick=nick, reason=f"{m.author} used the renameall command")
             except discord.errors.Forbidden:
                 pass
+            else:
+                enumprogress += 1
 
     renameList.remove(m.guild.id)
     await m.channel.send("Renaming finished!")
