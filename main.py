@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V138 - Wrath'                  # Version
+version                 = 'V139 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -25,6 +25,7 @@ client : discord.Client = discord.Client(                 # Create client
                                 intents=intents,
                                 allowed_mentions=defment) # Sets who can be mentioned
 
+developer_mode : bool = os.path.isfile('developer.lock')
 onreadyonce = False # Stops on_ready from firing multiple times
 commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
@@ -1211,8 +1212,10 @@ async def on_ready():  # Executes when bot connects
             type=discord.ActivityType.listening, name=f'{prefix} >w>'))
     print('Potato Overlord is ready!')
 
-    # Only enable for testing purposes, comment out otherwise
-    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name='Potato')); print("Developer status enabled")
+    if developer_mode:
+        await client.change_presence(status=discord.Status.dnd,
+                                     activity=discord.Activity(type=discord.ActivityType.listening,
+                                                               name='Potato'))
 
     # Checks for new guilds, adds them to database
     async def managenewguilds():
