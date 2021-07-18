@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V137 - Wrath'                  # Version
+version                 = 'V138 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -30,7 +30,16 @@ commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
 spamDict = {} # Preventing spam/bot abuse
+
+# renameall globals
 renameList = [] # Stops renameall stacking
+engdict_database = sqlite.Connection(':memory:')
+engdict_db_cursor = engdict_database.cursor()
+engdict_db_cursor.execute("PRAGMA synchronous = OFF")
+engdict_db_cursor.execute("CREATE TABLE words (word TEXT)")
+with open('english_dict_a.txt') as engdict:
+    engdict_db_cursor.executemany("INSERT INTO words (word) VALUES (?)", ((line[:-1],) for line in engdict.readlines()))
+engdict_db_cursor.close()
 
 class Command():
     """
@@ -164,12 +173,16 @@ async def _(m : discord.Message):
     Renames everyone in the guild,
     with some optional formatting.
 
-    Using curly braces {{}} you can add special formatting:
-        ranew - **Ran**dom **e**nglish **w**ord
-        Ranew - **Ran**dom **e**nglish **w**ord
-                with first letter capitalized
+    There is formatting, which can be added using `%` and a character:
+        a - Random english word
+        A - Random english word, first letter capitalized
+    To include a literal %, use `%%`
+    To escape a formatting sequence, use `%%`, example:
+        This is %%a
+        Will result in name "This is %%a"
+    It is automatically that all formats are valid, so even
 
-    This command will take a while to process with more people
+    This command will take more itme to process with more people
     """
 
     if (not m.author.guild_permissions.manage_nicknames) and (m.author.premium_since is None):
@@ -185,46 +198,55 @@ async def _(m : discord.Message):
         await m.channel.send("No format given!")
         return
 
-    if len(form) > 26:
-        await m.channel.send("The format must be less than 26 characters!")
-        return
-
     if m.guild.id in renameList:
         await m.channel.send("A renameall command is already in progress, please wait until it finishes!")
         return
 
-    renameList.append(m.guild.id)
+    # Maximum characters in a discord nickname
+    maxchars = 32
+    import re
 
+    renameList.append(m.guild.id)
     await m.channel.send("Starting the rename, this might take a while!")
 
     async with m.channel.typing():
+        minchars : int = 0 # Minimum required characters for formatting
+        cursor : sqlite.Cursor = engdict_database.cursor()
+        engwordsneeded : int = len(re.findall(r"%[aA]", form))
+        minchars += engwordsneeded
+        engwords : list[str] = [] # List of random english words for further processing
 
-        from random import randint
+        engquery : str = ""
+        if engwordsneeded > 0:
+            engquery = f"SELECT word FROM words WHERE LENGTH(word) <= {((maxchars - (len(form) - engwordsneeded)) // engwordsneeded) + 1} ORDER BY RANDOM() LIMIT {engwordsneeded}"
 
-        # Yes the filename is hard-coded don't judge me
-        with open("english_dict_a.txt") as f:
-            flen : int = f.seek(0, 2)
+        for i, member in enumerate(m.guild.members):
 
-            for i, member in enumerate(m.guild.members):
-                error : bool = False
-                name : str = ''
+            engwords = cursor.execute(engquery).fetchall()
+            if engwords == []:
+                engwords = [0]
+            usedwords = 0
 
-                # This might become an infinite loop, but unlikely
-                # TODO: Make this better and more flexible,
-                #       makes it hard to add other formatting options
-                while len(name) > 32 or name == '':
-                    f.seek(randint(0, flen))
-                    try:
-                        name = form.format(f.read(100).split("\n", 2)[1])
-                    except IndexError:
-                        error = True
-                        break
-                if error:
-                    continue
-                try:
-                    await member.edit(nick=name, reason=f"{m.author} used the renameall command")
-                except discord.errors.Forbidden:
-                    pass
+            def subfunc(match : re.Match):
+                nonlocal usedwords
+
+                let : str = match.group(1)
+                sd : dict = {
+                    '%' : '%',
+                    'a' : engwords[usedwords][0],
+                    'A' : engwords[usedwords][0].capitalize(),
+                }
+                if let == 'a' or let == 'A':
+                    usedwords += 1
+
+                return sd.get(let, match.group(0))
+
+            nick = re.sub("%([a-zA-Z%])", subfunc, form)
+
+            try:
+                await member.edit(nick=nick, reason=f"{m.author} used the renameall command")
+            except discord.errors.Forbidden:
+                pass
 
     renameList.remove(m.guild.id)
     await m.channel.send("Renaming finished!")
@@ -1184,14 +1206,13 @@ async def on_ready():  # Executes when bot connects
 
     onreadyonce = True
 
-    # Yes
-
-    # Yes
-
     await client.change_presence(
         activity=discord.Activity(
             type=discord.ActivityType.listening, name=f'{prefix} >w>'))
     print('Potato Overlord is ready!')
+
+    # Only enable for testing purposes, comment out otherwise
+    await client.change_presence(status=discord.Status.dnd, activity=discord.Activity(type=discord.ActivityType.listening, name='Potato')); print("Developer status enabled")
 
     # Checks for new guilds, adds them to database
     async def managenewguilds():
@@ -1473,3 +1494,4 @@ keep_alive()  # Starts a webserver to be pinged.
 client.run(os.environ.get("DISCORD_BOT_TOKEN"))
 
 database.close()
+engdict_database.close()
