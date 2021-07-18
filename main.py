@@ -181,7 +181,6 @@ async def _(m : discord.Message):
     To escape a formatting sequence, use `%%`, example:
         This is %%a
         Will result in name "This is %%a"
-    It is automatically that all formats are valid, so even
 
     This command will take more itme to process with more people
     """
