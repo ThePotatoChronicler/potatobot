@@ -211,7 +211,7 @@ async def _(m : discord.Message):
         await m.channel.send("No format specified!")
         return
 
-    elif not preview and form == '%clear%':
+    elif (not preview) and form == '%clear%':
         nameschanged : int = 0
         renameList.append(m.guild.id)
         await m.channel.send("Clearing all nicknames, this might take a while!")
@@ -237,8 +237,8 @@ async def _(m : discord.Message):
     # Maximum characters in a discord nickname
     maxchars = 32
     import re
-
-    renameList.append(m.guild.id)
+    if not preview:
+        renameList.append(m.guild.id)
 
     async with m.channel.typing():
         # Occurence count
@@ -259,7 +259,8 @@ async def _(m : discord.Message):
         minchars += formcdict.get('d', 0)
 
         if (minchars + len(re.sub(r"%[a-zA-Z%]", '', form))) > maxchars:
-            renameList.remove(m.guild.id)
+            if not preview:
+                renameList.remove(m.guild.id)
             await m.channel.send(f"Name would be longer than Discord allows ({maxchars})")
             return
 
@@ -312,7 +313,8 @@ async def _(m : discord.Message):
                 enumprogress += 1
                 nameschanged += 1
 
-    renameList.remove(m.guild.id)
+    if not preview:
+        renameList.remove(m.guild.id)
     if not preview:
         await m.channel.send(f"Renaming finished, changed nicknames of {nameschanged} out of {len(m.guild.members)} member{'' if len(m.guild.members) == 1 else 's'}")
 
