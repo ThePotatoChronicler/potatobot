@@ -211,7 +211,7 @@ async def _(m : discord.Message):
         await m.channel.send("No format specified!")
         return
 
-    elif not preivew and form == '%clear%':
+    elif not preview and form == '%clear%':
         nameschanged : int = 0
         renameList.append(m.guild.id)
         await m.channel.send("Clearing all nicknames, this might take a while!")
