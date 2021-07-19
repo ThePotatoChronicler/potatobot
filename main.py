@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V143 - Wrath'                  # Version
+version                 = 'V144 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -49,6 +49,9 @@ class Command():
     from typing import Coroutine as coro
     def __init__(func : coro, /):
         pass
+
+class DoesNotExist(Exception):
+    pass
 
 def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
     def wrapper(function):
@@ -157,10 +160,6 @@ async def _(m : discord.Message):
 
     await m.channel.send("Finished filling up all the emoji slots")
 
-
-# TODO: This command could use a rewrite, without the use of
-#       str.format, so that people can't abuse it, potentially
-#       making it an infinite loop
 @add_command(['renameall'])
 async def _(m : discord.Message):
     """
@@ -181,6 +180,7 @@ async def _(m : discord.Message):
         A - Random english word, first letter capitalized
         e - Enumerates all users
         E - Enumerates all users with equal number length, adding leading zeroes if needed
+        d - Random decimal number (0 - 9)
     To include a literal %, use `%%`
     To escape a formatting sequence, use `%%`, example:
         This is %%a
@@ -232,18 +232,24 @@ async def _(m : discord.Message):
     renameList.append(m.guild.id)
 
     async with m.channel.typing():
+        # Occurence count
+        formcdict : dict[str, int] = {}
+        for inst in re.findall(r"%[a-zA-Z%]", form):
+            formcdict[inst[1]] = formcdict.get(inst[1], 0) + 1
+
         minchars : int = 0 # Minimum required characters for formatting
         cursor : sqlite.Cursor = engdict_database.cursor()
-        engwordsneeded : int = len((*filter(lambda m : m == '%a' or m == '%A', re.findall(r"%[a-zA-Z%]", form)),))
+        engwordsneeded : int = formcdict.get('a', 0) + formcdict.get('A', 0)
         engwords : list[str] = [] # List of random english words for further processing
         enumprogress : int = 0
         enumlength : int = len(str(len(m.guild.members)))
 
-        minchars -= len((*filter(lambda m : m == '%%', re.findall(r"%[a-zA-Z%]", form)),))
+        minchars += formcdict.get('%', 0)
         minchars += engwordsneeded
-        minchars += len((*filter(lambda m : m == '%e' or m == '%E', re.findall(r"%[a-zA-Z%]", form)),)) * enumlength
+        minchars += (formcdict.get('e', 0) + formcdict.get('E', 0)) * enumlength
+        minchars += formcdict.get('d', 0)
 
-        if (minchars + len(re.sub("%[a-zA-Z]", "", form))) > maxchars:
+        if (minchars + len(re.sub(r"%[a-zA-Z%]", '', form))) > maxchars:
             renameList.remove(m.guild.id)
             await m.channel.send(f"Name would be longer than Discord allows ({maxchars})")
             return
@@ -256,6 +262,9 @@ async def _(m : discord.Message):
             engquery = f"SELECT word FROM words WHERE LENGTH(word) <= {((maxchars - (len(form) - engwordsneeded)) // engwordsneeded) + 1} ORDER BY RANDOM() LIMIT {engwordsneeded}"
 
         nameschanged : int = 0
+
+        # Used for the %d formatting
+        from random import randint
 
         for i, member in enumerate(m.guild.members):
 
@@ -272,6 +281,7 @@ async def _(m : discord.Message):
                     'A' : engwords[usedwords][0].capitalize() if usedwords < len(engwords) else "",
                     'e' : str(enumprogress),
                     'E' : str(enumprogress).zfill(enumlength),
+                    'd' : str(randint(0, 9))
                 }
                 if let == 'a' or let == 'A':
                     usedwords += 1
@@ -489,9 +499,7 @@ async def _(m):
         await m.channel.send(order[int(m.content.split()[1])])
         return
     except:
-        raise KeyError()
-
-    raise KeyError()
+        raise DoesNotExist()
 
 
 @add_command(['help'], 12)
@@ -596,7 +604,7 @@ async def _(m):
     :)
     """
     if m.author.id != 185421198094499840:
-        raise KeyError("Not allowed m8")
+        raise DoesNotExist("Not allowed m8")
 
     i = 0
     while i < int(m.content.split()[1]):
@@ -1455,7 +1463,7 @@ async def on_message(m):  # Executes on every message
                 if comdict['emoji']:
                     reactionDict[message.id] = comdict['function']
 
-            except KeyError:
+            except DoesNotExist:
                 await m.channel.send('Command doesn\'t exist!')
 
             await asyncio.sleep(comdict['timeout'])
