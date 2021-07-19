@@ -184,7 +184,7 @@ async def _(m : discord.Message):
     To include a literal %, use `%%`
     To escape a formatting sequence, use `%%`, example:
         This is %%a
-        Will result in name "This is %%a"
+        Will result in name "This is %a"
 
     This command will take more time to process with more people
     """
