@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V145 - Wrath'                  # Version
+version                 = 'V147 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -27,6 +27,8 @@ client : discord.Client = discord.Client(                 # Create client
 
 developer_mode : bool = os.path.isfile('developer.lock')
 onreadyonce = False # Stops on_ready from firing multiple times
+unchanginglist = [] # Used by the Unchanging role to check
+                    # if the bot forced a rename, so the event is ignored next
 commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
@@ -550,7 +552,11 @@ async def nonamechange(m):
     `{prefix}nonamechange (user)`
 
     Moderators only. Requires the **Unchanging** role in this server.
-    Makes the user unable to rename themselves.
+    Makes the user unable to rename themselves, by setting their name
+    back whenever they are renamed.
+
+    This is not a guarantee, and if the bot is offline, it will not know
+    of any renames afterwards.
     """
     if m.author.guild_permissions.manage_nicknames:
         for role in m.guild.get_member(int(m.content.split()[1])).roles:
@@ -1543,17 +1549,19 @@ async def on_member_unban(g, u):
 
 
 @client.event
-async def on_member_update(bm, am):
+async def on_member_update(bm : discord.Member, am : discord.Member):
     for role in am.roles:
-        if role.name == 'Unchanging' and am.display_name != am.name:
-            await am.edit(nick=None, reason=f'Has the Unchanging role.')
-            return
+        if (role.name == 'Unchanging') and (bm.display_name != am.display_name):
+            if am.id in unchanginglist:
+                unchanginglist.remove(am.id)
+            else:
+                unchanginglist.append(am.id)
+                await am.edit(nick=bm.display_name, reason=f'Has the Unchanging role.')
 
 
 @client.event
 async def on_message_edit(mb, ma):
-    if (ma.channel.name == 'letter_wars' or ma.channel.name == 'letter-wars'
-        ) and not len(ma.content.strip()) == 1:
+    if (ma.channel.name == 'letter_wars' or ma.channel.name == 'letter-wars') and not len(ma.content.strip()) == 1:
         await ma.delete()
 
 
