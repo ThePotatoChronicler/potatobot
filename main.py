@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V142 - Wrath'                  # Version
+version                 = 'V143 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -180,7 +180,7 @@ async def _(m : discord.Message):
         a - Random english word
         A - Random english word, first letter capitalized
         e - Enumerates all users
-        E - Enumerates all users, equally long leading zeroes
+        E - Enumerates all users with equal number length, adding leading zeroes if needed
     To include a literal %, use `%%`
     To escape a formatting sequence, use `%%`, example:
         This is %%a
