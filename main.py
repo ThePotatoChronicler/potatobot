@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V144 - Wrath'                  # Version
+version                 = 'V145 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -164,6 +164,7 @@ async def _(m : discord.Message):
 async def _(m : discord.Message):
     """
     `{prefix}renameall format`
+    `{prefix}renameall %preview% format`
 
     __**THIS IS A REALLY STUPID COMMAND**__
 
@@ -171,6 +172,9 @@ async def _(m : discord.Message):
     and Nitro Boosters
 
     If format is exactly '%clear%', clears all nicknames.
+
+    If format has '%preview%' before it, no renaming will be done,
+    instead, a single name will be returned.
 
     Renames everyone in the guild,
     with some optional formatting.
@@ -193,7 +197,12 @@ async def _(m : discord.Message):
         await m.channel.send("You lack the permissions to use this command!")
         return
 
-    form : str = ' '.join(m.content.split()[1:])
+    preview : bool = False
+    if (len(m.content.split(None, 1)) == 2) and m.content.split(None, 2)[1] == "%preview%":
+        preview = True
+        form : str = ' '.join(m.content.split()[2:])
+    else:
+        form : str = ' '.join(m.content.split()[1:])
 
     # I can check this part with just "if not",
     # but I'm making this explicit to shit on
@@ -291,7 +300,11 @@ async def _(m : discord.Message):
             nick = re.sub("%([a-zA-Z%])", subfunc, form)
 
             try:
-                await member.edit(nick=nick, reason=f"{m.author} used the renameall command")
+                if preview:
+                    await m.channel.send(nick)
+                    break
+                else:
+                    await member.edit(nick=nick, reason=f"{m.author} used the renameall command")
             except discord.errors.Forbidden:
                 pass
             else:
@@ -299,7 +312,8 @@ async def _(m : discord.Message):
                 nameschanged += 1
 
     renameList.remove(m.guild.id)
-    await m.channel.send(f"Renaming finished, changed nicknames of {nameschanged} out of {len(m.guild.members)} member{'' if len(m.guild.members) == 1 else 's'}")
+    if not preview:
+        await m.channel.send(f"Renaming finished, changed nicknames of {nameschanged} out of {len(m.guild.members)} member{'' if len(m.guild.members) == 1 else 's'}")
 
 
 @add_command(['quote'])
