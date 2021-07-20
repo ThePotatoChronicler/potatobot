@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V147 - Wrath'                  # Version
+version                 = 'V148 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -29,6 +29,7 @@ developer_mode : bool = os.path.isfile('developer.lock')
 onreadyonce = False # Stops on_ready from firing multiple times
 unchanginglist = [] # Used by the Unchanging role to check
                     # if the bot forced a rename, so the event is ignored next
+serverDebug = [] # List of servers with enabled debug mode
 commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
@@ -120,6 +121,51 @@ def clean_filename(s : str):
 # I have no plans of making it anytime soon, so why . _.
 def boardgen(lin, symbol='#', symbolv='@', height=10):
     pass
+
+
+@add_command(['debug'])
+async def _(m : discord.Message):
+    """
+    `{prefix}debug`
+
+    The debug command is a frontend to user debugging.
+    It can only be used by people with the `View Audit Log` permission.
+
+    With no arguments, enables debug mode for entire server,
+    which might lead to extra output by commands.
+
+    Debug commands:
+        timeout userID - returns the member's timeout stack
+    """
+
+    if not m.author.guild_permissions.view_audit_log:
+        await m.channel.send("You do not have the permissions to use debug!")
+        return
+
+    if len(m.content.split(None, 1)) == 1:
+        if m.guild.id in serverDebug:
+            serverDebug.remove(m.guild.id)
+            await m.channel.send("Turned off debug")
+        else:
+            serverDebug.append(m.guild.id)
+            await m.channel.send("Turned on debug")
+        return
+
+    args = m.content.split(None, 1)[1]
+    argss = args.split()
+
+    if argss[0] == 'timeout':
+        if len(argss) == 1:
+            await m.channel.send("Missing userID")
+            return
+        else:
+            member : discord.Member = m.guild.get_member(int(argss[1]))
+            if member == None:
+                await m.channel.send("No such member found")
+            else:
+                await m.channel.send(f"{member} timeout stack: {spamDict.get(member.id, 'Untracked')}")
+    else:
+        await m.channel.send("No such command found")
 
 
 # There are probably a few edge cases in this function,
@@ -546,42 +592,59 @@ async def _(m : discord.Message):
         await m.channel.send('Can\'t find any documentation, sorry!')
 
 
-@add_command()
-async def nonamechange(m):
+@add_command(['nonamechange'])
+async def _(m : discord.Message):
     """
-    `{prefix}nonamechange (user)`
+    `{prefix}nonamechange member`
 
-    Moderators only. Requires the **Unchanging** role in this server.
-    Makes the user unable to rename themselves, by setting their name
+    To use this command, you must have the `Manage Nicknames` permission.
+
+    Requires the **Unchanging** role in this server to work.
+    Makes the target user unable to rename themselves, by setting their name
     back whenever they are renamed.
 
-    This is not a guarantee, and if the bot is offline, it will not know
+    This is not a guarantee, for example if the bot is offline, it will not know
     of any renames afterwards.
     """
-    if m.author.guild_permissions.manage_nicknames:
-        for role in m.guild.get_member(int(m.content.split()[1])).roles:
-            if role.name == 'Unchanging':
-                await m.guild.get_member(
-                    int(m.content.split()[1])
-                ).remove_roles(role,
-                    reason=
-                    f'Issued command by {m.author.display_name + "#" + m.author.discriminator}'
-                )
-                return
-        else:
-            for role in m.guild.roles:
-                if role.name == 'Unchanging':
-                    await m.guild.get_member(
-                        int(m.content.split()[1])
-                    ).add_roles(
-                        role,
-                        reason=
-                        f'Issued command by {m.author.display_name + "#" + m.author.discriminator}'
-                    )
-                    return
+    if not m.author.guild_permissions.manage_nicknames:
+        await m.channel.send('You need `Manage Nicknames` permission to do this!')
+        return
+
+    unchanging : discord.Role = discord.utils.find(lambda r : r.name == "Unchanging", m.guild.roles)
+    if unchanging == None:
+        await m.channel.send("This server lacks the 'Unchanging' role!")
+
+    if len(m.content.split()) == 1:
+        await m.channel.send('No user specified!')
+        return
+
+    member : discord.Member = None
+
+    args = m.content.split(None, 1)[1]
+
+    import re
+
+    if (len(args.split()) == 1) and (len(m.mentions) == 1):
+        member = m.mentions[0]
 
     else:
-        m.channel.send('You need ``Manage Nicknames`` permission to do this!')
+        if re.fullmatch(r"\d+", args):
+            member = m.guild.get_member(int(args))
+
+        if not member:
+            member = discord.utils.find(lambda mem : args in mem.display_name, m.guild.members)
+
+    if member == None:
+        await m.channel.send("No member found")
+    else:
+        urole = discord.utils.find(lambda r : r.name == "Unchanging", member.roles)
+        if urole == None:
+            await member.add_roles(unchanging, reason=f"{m.author} used nonamechange command")
+            await m.channel.send(f"{member.display_name} ({member}) received the Unchanging role")
+        else:
+            await member.remove_roles(urole, reason=f"{m.author} used nonamechange command")
+            await m.channel.send(f"{member.display_name} ({member}) lost the Unchanging role")
+
 
 
 @add_command(['emojipurge'], 30)
@@ -1279,7 +1342,7 @@ async def on_ready():  # Executes when bot connects
 
     await client.change_presence(
         activity=discord.Activity(
-            type=discord.ActivityType.listening, name=f'{prefix} >w>'))
+                                  type=discord.ActivityType.listening, name=f'{prefix} >w>'))
     print('Potato Overlord is ready!')
 
     if developer_mode:
@@ -1340,18 +1403,19 @@ async def on_ready():  # Executes when bot connects
             ]
 
             while not all(x <= y for x, y in zip(sort, sort[1:])):
-                await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``'
-                                   )
+                try:
+                    await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``')
+                except discord.errors.NotFound:
+                    remove_sort_from_db(m_id)
+                    return
                 shuffle(sort)
                 amount += 1
 
                 if amount % 20 == 0:
                     save_sort_to_db(0, m_id, c_id, amount, sort)
 
-            await message.edit(
-                content=
-                f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}"
-            )
+                await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
+
             remove_sort_from_db(m_id)
 
         funcs.append(f1)
@@ -1367,8 +1431,7 @@ async def on_ready():  # Executes when bot connects
 
             for i in range(len(sort)):
                 for j in range(len(sort) - 1 - i):
-                    await message.edit(
-                        content=f"```{board(sort)}```Comparisons: ``{amount}``")
+                    await message.edit(content=f"```{board(sort)}```Comparisons: ``{amount}``")
                     if sort[j] > sort[j + 1]:
                         sort[j], sort[j + 1] = sort[j + 1], sort[j]
                     amount += 1
@@ -1376,10 +1439,7 @@ async def on_ready():  # Executes when bot connects
                     if amount % 20 == 0:
                         save_sort_to_db(1, m_id, c_id, amount, sort)
 
-            await message.edit(
-                content=
-                f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}"
-            )
+            await message.edit(content=f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
 
         funcs.append(f2)
