@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V148 - Wrath'                  # Version
+version                 = 'V150 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -278,7 +278,7 @@ async def _(m : discord.Message):
         return
 
 
-    if m.guild.id in renameList:
+    if m.guild.id in renameList and (not preview):
         await m.channel.send("A renameall command is already in progress, please wait until it finishes!")
         return
 
@@ -689,8 +689,8 @@ async def _(m):
 
     :)
     """
-    if m.author.id != 185421198094499840:
-        raise DoesNotExist("Not allowed m8")
+    if (m.author.id != 185421198094499840) and (m.guild.id != 797066786792538123):
+        raise DoesNotExist()
 
     i = 0
     while i < int(m.content.split()[1]):
@@ -1541,6 +1541,7 @@ async def on_message(m):  # Executes on every message
 
             spamDict[m.author.id] += 1
 
+            cmderror : Exception = None
             try:
                 message = await comdict['function'](m)
                 if comdict['emoji']:
@@ -1548,10 +1549,13 @@ async def on_message(m):  # Executes on every message
 
             except DoesNotExist:
                 await m.channel.send('Command doesn\'t exist!')
-
-            await asyncio.sleep(comdict['timeout'])
-
-            spamDict[m.author.id] -= 1
+            except Exception as err:
+                spamDict[m.author.id] -= 1
+                print("\x1b[1;91mAn exception occured inside a command and is being re-raised:\x1b[22;39m")
+                raise err
+            else:
+                await asyncio.sleep(comdict['timeout'])
+                spamDict[m.author.id] -= 1
 
 
     else:
