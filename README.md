@@ -5,6 +5,16 @@ you can find the real up to date version [on repl.it](https://replit.com/@TaterC
 This isn't really meant to be used by others, but if you really wanna
 use this broken terrible bot, ya sure can.
 
+## Dependencies:
+- Python
+    - discord.py
+    - art
+    - requests
+
+(Luap Dependencies)
+- C compiler
+    - liblua(.a|.so)
+- Lua
+
 ## Notes:
 - The bot won't work properly without a data.db, I created it by hand.
-- You will also need lua to compile luap.

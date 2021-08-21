@@ -1,4 +1,21 @@
+# Used to start the bot locally (atleast for me, I have the discord token in there)
 run.sh
-__pycache__
+
+# Used on runtime to run the bot with special stuff
 developer.lock
+
+# Dev file that stores commit text
 commit.md
+
+# Stuff that shouldn't be shared
+data.db
+
+# Cache
+__pycache__
+
+# Binaries
+luac
+luap
+
+# User-generated content
+luacode

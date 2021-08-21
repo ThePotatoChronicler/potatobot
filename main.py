@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V150 - Wrath'                  # Version
+version                 = 'V151 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -692,13 +692,16 @@ async def _(m):
     if (m.author.id != 185421198094499840) and (m.guild.id != 797066786792538123):
         raise DoesNotExist()
 
-    i = 0
-    while i < int(m.content.split()[1]):
-        try:
-            await m.channel.send(' '.join(m.content.split(' ')[2:]))
-        except discord.errors.NotFound:
-            return
-        i += 1
+    try:
+        i = 0
+        while i < int(m.content.split()[1]):
+            try:
+                await m.channel.send(' '.join(m.content.split(' ')[2:]))
+            except discord.errors.NotFound:
+                return
+            i += 1
+    except:
+        pass
 
 
 @add_command()
@@ -887,7 +890,7 @@ async def ping(m):
     Shows the bot's response time in seconds.
     """
     await m.channel.send(
-        f'Pong! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
+        f'Pong! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}` seconds to respond'
     )
 
 
@@ -899,7 +902,7 @@ async def pong(m):
     Shows the bot's response time in seconds.
     """
     await m.channel.send(
-        f'Ping! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}`'
+        f'Ping! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}` seconds to respond'
     )
 
 
@@ -1534,7 +1537,8 @@ async def on_message(m):  # Executes on every message
                 return
 
             try:
-                comdict = commandsDict[m.content.split()[0][len(prefix):]]
+                cmdname : str = m.content.split()[0][len(prefix):]
+                comdict = commandsDict[cmdname]
             except KeyError:
                 await m.channel.send('Command doesn\'t exist!')
                 return
@@ -1551,7 +1555,7 @@ async def on_message(m):  # Executes on every message
                 await m.channel.send('Command doesn\'t exist!')
             except Exception as err:
                 spamDict[m.author.id] -= 1
-                print("\x1b[1;91mAn exception occured inside a command and is being re-raised:\x1b[22;39m")
+                print(f"\x1b[1;91mAn exception occured inside '{cmdname}' and is being re-raised:\x1b[22;39m")
                 raise err
             else:
                 await asyncio.sleep(comdict['timeout'])
