@@ -16,6 +16,8 @@ __pycache__
 # Binaries
 luac
 luap
+luapc/luap
+luapc/liblua.a
 
 # User-generated content
 luacode
