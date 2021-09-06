@@ -15,7 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = 'V151 - Wrath'                  # Version
+version                 = 'V152 - Wrath'                  # Version
 potatoid                = 185421198094499840              # My discord ID
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
@@ -233,6 +233,8 @@ async def _(m : discord.Message):
         e - Enumerates all users
         E - Enumerates all users with equal number length, adding leading zeroes if needed
         d - Random decimal number (0 - 9)
+        l - Random lowercase letter
+        L - Random uppercase letter
     To include a literal %, use `%%`
     To escape a formatting sequence, use `%%`, example:
         This is %%a
@@ -305,6 +307,7 @@ async def _(m : discord.Message):
         minchars += engwordsneeded
         minchars += (formcdict.get('e', 0) + formcdict.get('E', 0)) * enumlength
         minchars += formcdict.get('d', 0)
+        minchars += formcdict.get('l', 0) + formcdict.get('L', 0)
 
         if (minchars + len(re.sub(r"%[a-zA-Z%]", '', form))) > maxchars:
             if not preview:
@@ -331,6 +334,7 @@ async def _(m : discord.Message):
             usedwords = 0
 
             def subfunc(match : re.Match):
+                from random import randint
                 nonlocal usedwords
 
                 let : str = match.group(1)
@@ -340,7 +344,9 @@ async def _(m : discord.Message):
                     'A' : engwords[usedwords][0].capitalize() if usedwords < len(engwords) else "",
                     'e' : str(enumprogress),
                     'E' : str(enumprogress).zfill(enumlength),
-                    'd' : str(randint(0, 9))
+                    'd' : str(randint(0, 9)),
+                    'l' : chr(randint(ord('a'), ord('z'))),
+                    'L' : chr(randint(ord('A'), ord('Z')))
                 }
                 if let == 'a' or let == 'A':
                     usedwords += 1

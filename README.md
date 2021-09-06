@@ -17,4 +17,4 @@ use this broken terrible bot, ya sure can.
 - Lua
 
 ## Notes:
-- The bot won't work properly without a data.db, I created it by hand.
+- The bot won't work properly without a data.db, use init.sh to create it
