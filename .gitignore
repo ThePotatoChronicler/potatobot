@@ -8,10 +8,6 @@ developer.lock
 commit.md
 
 # Stuff that shouldn't be shared
-data.db
-
-# Cache
-__pycache__
 
 # Binaries
 luac
@@ -19,3 +15,4 @@ luap
 
 # User-generated content
 luacode
+data.db
