@@ -15,8 +15,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 0, 0, "Resurrection")       # Version
-potatoid                = 185421198094499840              # My discord ID
+version                 = (1, 0, 1, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -1125,8 +1124,8 @@ async def _(m):
     Sends contact info about Potato, my father <3
     """
 
-    # Gets me :)
-    p = client.get_guild(752177122998747199).get_member(potatoid)
+    # Gets the bot owner :)
+    p = (await client.application_info()).owner
     info = f"""
     Discord: {p.name}#{p.discriminator}
     [Github](https://github.com/ThePotatoChronicler)
