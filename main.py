@@ -3,6 +3,7 @@ from keep_alive import keep_alive # repl.it keep_alive function
 
 print('Starting Potato Overlord!')
 
+from cryptography.fernet import Fernet
 import potatoscript
 import art
 import asyncio
@@ -15,7 +16,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 0, 1, "Resurrection")       # Version
+version                 = (1, 1, 0, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -23,6 +24,8 @@ defment                 = discord.AllowedMentions(everyone=False, roles=False, u
 client : discord.Client = discord.Client(                 # Create client
                                 intents=intents,
                                 allowed_mentions=defment) # Sets who can be mentioned
+
+christmas = Fernet(os.environ.get("CHRISTMAS_KEY"))
 
 developer_mode : bool = os.path.isfile('developer.lock')
 onreadyonce = False # Stops on_ready from firing multiple times
@@ -33,6 +36,7 @@ commandsDict = {} # Globalization
 reactionDict = {} # My reaction API
 storageDict = {} # Global storage for commands
 spamDict = {} # Preventing spam/bot abuse
+christmasDict = {} # Compiled christmas commands
 
 # renameall globals
 renameList = [] # Stops renameall stacking
@@ -107,6 +111,12 @@ def board(lin, symbol='#', height=10):
         return '\n' + (symbol + '\n') * 10
 
 
+def remove_first_word(s : str):
+    """
+    Removes first word and the first whitespace after it
+    """
+    return s[len(s.split()[0]) + 1:]
+
 # This will definitely not go horribly wrong eventually
 def clean_filename(s : str):
     """
@@ -166,6 +176,12 @@ async def _(m : discord.Message):
     else:
         await m.channel.send("No such command found")
 
+
+@add_command(['christmas1'])
+async def _(m : discord.Message):
+    g = { 'input' : remove_first_word(m.content) }
+    exec(christmasDict['christmas1'], g)
+    await m.channel.send(g['output'])
 
 # There are probably a few edge cases in this function,
 # let's hope I am not bitten in the ass by them
@@ -1370,6 +1386,10 @@ async def on_ready():  # Executes when bot connects
         await client.change_presence(status=discord.Status.dnd,
                                      activity=discord.Activity(type=discord.ActivityType.listening,
                                                                name='Potato'))
+
+    with open('christmas/christmas1', 'rb') as f:
+        christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
+        pass
 
     # Checks for new guilds, adds them to database
     async def managenewguilds():
