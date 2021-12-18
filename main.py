@@ -16,7 +16,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 1, 0, "Resurrection")       # Version
+version                 = (1, 1, 1, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -903,7 +903,7 @@ async def _(m):
     from inspect import cleandoc
 
     v = version
-    fversion = f"{''.join( str(n) for n in v[0:3] )} - {v[3]}"
+    fversion = f"{'.'.join( str(n) for n in v[0:3] )} - {v[3]}"
 
     await m.channel.send(
         cleandoc(
