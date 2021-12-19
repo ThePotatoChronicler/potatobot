@@ -10,9 +10,6 @@ __pycache__
 # Dev file that stores commit text
 /commit.md
 
-# Secret christmas stuff
-/christmas
-
 # Binaries
 /luac
 /luap
