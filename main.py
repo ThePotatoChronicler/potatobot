@@ -16,11 +16,11 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 1, 1, "Resurrection")       # Version
+version                 = (1, 1, 2, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
-defment                 = discord.AllowedMentions(everyone=False, roles=False, users=True)
+defment                 = discord.AllowedMentions(everyone=False, roles=False, users=False)
 client : discord.Client = discord.Client(                 # Create client
                                 intents=intents,
                                 allowed_mentions=defment) # Sets who can be mentioned
