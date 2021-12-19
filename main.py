@@ -16,7 +16,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 2, 0, "Resurrection")       # Version
+version                 = (1, 3, 0, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -187,6 +187,12 @@ async def _(m : discord.Message):
 async def _(m : discord.Message):
     g = { 'input' : remove_first_word(m.content) }
     exec(christmasDict['christmas2'], g)
+    await m.channel.send(g['output'])
+
+@add_command(['christmas3'])
+async def _(m : discord.Message):
+    g = { 'm' : m }
+    exec(christmasDict['christmas3'], g)
     await m.channel.send(g['output'])
 
 # There are probably a few edge cases in this function,
@@ -1395,11 +1401,12 @@ async def on_ready():  # Executes when bot connects
 
     with open('christmas/christmas1', 'rb') as f:
         christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
-        pass
 
     with open('christmas/christmas2', 'rb') as f:
         christmasDict['christmas2'] = compile(christmas.decrypt(f.read()), "christmas2.py", 'exec')
-        pass
+
+    with open('christmas/christmas3', 'rb') as f:
+        christmasDict['christmas3'] = compile(christmas.decrypt(f.read()), "christmas3.py", 'exec')
 
     # Checks for new guilds, adds them to database
     async def managenewguilds():
