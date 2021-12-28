@@ -10,13 +10,14 @@ import asyncio
 import nextcord as discord
 import requests
 import datetime
+import bitstring
 import sqlite3 as sqlite
 
 database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 4, 0, "Resurrection")       # Version
+version                 = (1, 5, 0, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -199,6 +200,12 @@ async def _(m : discord.Message):
 async def _(m : discord.Message):
     g = { 'm' : m }
     exec(christmasDict['christmas4'], g)
+    await m.channel.send(g['output'])
+
+@add_command(['christmas2021'])
+async def _(m : discord.Message):
+    g = { 'input' : m.content }
+    exec(christmasDict['christmas2021'], g)
     await m.channel.send(g['output'])
 
 # There are probably a few edge cases in this function,
@@ -1405,17 +1412,20 @@ async def on_ready():  # Executes when bot connects
                                      activity=discord.Activity(type=discord.ActivityType.listening,
                                                                name='Potato'))
 
-    with open('christmas/christmas1', 'rb') as f:
+    with open('christmas2021/christmas1', 'rb') as f:
         christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
 
-    with open('christmas/christmas2', 'rb') as f:
+    with open('christmas2021/christmas2', 'rb') as f:
         christmasDict['christmas2'] = compile(christmas.decrypt(f.read()), "christmas2.py", 'exec')
 
-    with open('christmas/christmas3', 'rb') as f:
+    with open('christmas2021/christmas3', 'rb') as f:
         christmasDict['christmas3'] = compile(christmas.decrypt(f.read()), "christmas3.py", 'exec')
 
-    with open('christmas/christmas4', 'rb') as f:
+    with open('christmas2021/christmas4', 'rb') as f:
         christmasDict['christmas4'] = compile(christmas.decrypt(f.read()), "christmas4.py", 'exec')
+
+    with open('christmas2021/christmas2021', 'rb') as f:
+        christmasDict['christmas2021'] = compile(christmas.decrypt(f.read()), "christmas2021.py", 'exec')
 
     # Checks for new guilds, adds them to database
     async def managenewguilds():
@@ -1591,7 +1601,7 @@ async def on_message(m):  # Executes on every message
         if m.channel.name == 'binary-wars' or m.channel.name == 'binary_wars':
             await m.delete()
             await m.channel.send(
-                f'{m.author.display_name} : {"".join(bin(ord(x))[2:] for x in m.content)}',
+                f"{m.author.display_name} : {bitstring.Bits(bytes(m.content, 'utf-8')).bin}",
                 allowed_mentions=nomentions
             )
             return

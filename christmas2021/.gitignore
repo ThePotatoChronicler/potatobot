@@ -1,2 +1,9 @@
 # Secret christmas key
 /christmas_key.fernet
+
+# Encrypted files that aren't needed
+/christmas1
+/christmas2
+/christmas3
+/christmas4
+/christmas2021
