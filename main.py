@@ -17,7 +17,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 5, 0, "Resurrection")       # Version
+version                 = (1, 5, 1, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -374,7 +374,6 @@ async def _(m : discord.Message):
             usedwords = 0
 
             def subfunc(match : re.Match):
-                from random import randint
                 nonlocal usedwords
 
                 let : str = match.group(1)
@@ -1619,7 +1618,6 @@ async def on_message(m):  # Executes on every message
 
             spamDict[m.author.id] += 1
 
-            cmderror : Exception = None
             try:
                 message = await comdict['function'](m)
                 if comdict['emoji']:
@@ -1698,7 +1696,7 @@ async def on_member_update(bm : discord.Member, am : discord.Member):
                 unchanginglist.remove(am.id)
             else:
                 unchanginglist.append(am.id)
-                await am.edit(nick=bm.display_name, reason=f'Has the Unchanging role.')
+                await am.edit(nick=bm.display_name, reason='Has the Unchanging role.')
 
 
 @client.event
