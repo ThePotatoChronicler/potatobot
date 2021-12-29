@@ -182,31 +182,71 @@ async def _(m : discord.Message):
 async def _(m : discord.Message):
     g = { 'input' : remove_first_word(m.content) }
     exec(christmasDict['christmas1'], g)
-    await m.channel.send(g['output'])
+
+    # If we send an empty message, react with an emoji
+    try:
+        await m.channel.send(g['output'])
+    except discord.errors.HTTPException as ex:
+        if ex.code == 50006:
+            await m.add_reaction('❌')
+        else:
+            raise ex
 
 @add_command(['christmas2'])
 async def _(m : discord.Message):
     g = { 'input' : remove_first_word(m.content) }
     exec(christmasDict['christmas2'], g)
-    await m.channel.send(g['output'])
+
+    # If we send an empty message, react with an emoji
+    try:
+        await m.channel.send(g['output'])
+    except discord.errors.HTTPException as ex:
+        if ex.code == 50006:
+            await m.add_reaction('❌')
+        else:
+            raise ex
 
 @add_command(['christmas3'])
 async def _(m : discord.Message):
     g = { 'm' : m }
     exec(christmasDict['christmas3'], g)
-    await m.channel.send(g['output'])
+
+    # If we send an empty message, react with an emoji
+    try:
+        await m.channel.send(g['output'])
+    except discord.errors.HTTPException as ex:
+        if ex.code == 50006:
+            await m.add_reaction('❌')
+        else:
+            raise ex
 
 @add_command(['christmas4'])
 async def _(m : discord.Message):
     g = { 'm' : m }
     exec(christmasDict['christmas4'], g)
-    await m.channel.send(g['output'])
+
+    # If we send an empty message, react with an emoji
+    try:
+        await m.channel.send(g['output'])
+    except discord.errors.HTTPException as ex:
+        if ex.code == 50006:
+            await m.add_reaction('❌')
+        else:
+            raise ex
 
 @add_command(['christmas2021'])
 async def _(m : discord.Message):
     g = { 'input' : remove_first_word(m.content) }
     exec(christmasDict['christmas2021'], g)
-    await m.channel.send(g['output'])
+
+    # If we send an empty message, react with an emoji
+    try:
+        await m.channel.send(g['output'])
+    except discord.errors.HTTPException as ex:
+        if ex.code == 50006:
+            await m.add_reaction('❌')
+        else:
+            raise ex
 
 # There are probably a few edge cases in this function,
 # let's hope I am not bitten in the ass by them
