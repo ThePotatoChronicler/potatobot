@@ -17,7 +17,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 5, 1, "Resurrection")       # Version
+version                 = (1, 6, 0, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -204,7 +204,7 @@ async def _(m : discord.Message):
 
 @add_command(['christmas2021'])
 async def _(m : discord.Message):
-    g = { 'input' : m.content }
+    g = { 'input' : remove_first_word(m.content) }
     exec(christmasDict['christmas2021'], g)
     await m.channel.send(g['output'])
 
