@@ -17,7 +17,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 6, 0, "Resurrection")       # Version
+version                 = (1, 7, 1, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -190,7 +190,7 @@ async def _(m : discord.Message):
         if ex.code == 50006:
             await m.add_reaction('❌')
         else:
-            raise ex
+            raise ex from None
 
 @add_command(['christmas2'])
 async def _(m : discord.Message):
@@ -204,7 +204,7 @@ async def _(m : discord.Message):
         if ex.code == 50006:
             await m.add_reaction('❌')
         else:
-            raise ex
+            raise ex from None
 
 @add_command(['christmas3'])
 async def _(m : discord.Message):
@@ -218,7 +218,7 @@ async def _(m : discord.Message):
         if ex.code == 50006:
             await m.add_reaction('❌')
         else:
-            raise ex
+            raise ex from None
 
 @add_command(['christmas4'])
 async def _(m : discord.Message):
@@ -232,7 +232,7 @@ async def _(m : discord.Message):
         if ex.code == 50006:
             await m.add_reaction('❌')
         else:
-            raise ex
+            raise ex from None
 
 @add_command(['christmas2021'])
 async def _(m : discord.Message):
@@ -246,7 +246,7 @@ async def _(m : discord.Message):
         if ex.code == 50006:
             await m.add_reaction('❌')
         else:
-            raise ex
+            raise ex from None
 
 # There are probably a few edge cases in this function,
 # let's hope I am not bitten in the ass by them
@@ -1668,7 +1668,7 @@ async def on_message(m):  # Executes on every message
             except Exception as err:
                 spamDict[m.author.id] -= 1
                 print(f"\x1b[1;91mAn exception occured inside '{cmdname}' and is being re-raised:\x1b[22;39m")
-                raise err
+                raise err from None
             else:
                 await asyncio.sleep(comdict['timeout'])
                 spamDict[m.author.id] -= 1
