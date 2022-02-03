@@ -11,32 +11,38 @@ with warnings.catch_warnings():
 import sys
 import os
 import random
+import re
 import keep_alive # repl.it keep_alive function
 import cryptography.fernet
 import potatoscript
 import art
 import asyncio
 import traceback
-import requests
+import aiohttp
 import datetime
 import bitstring
 import sqlite3 as sqlite
 
-database                = sqlite.Connection('data.db')    # Database
-user_code_file          = 'luacode/'                      # Location of user code
+loop                         = asyncio.new_event_loop()
+database                     = sqlite.Connection('data.db')    # Database
+httpclient: aiohttp.ClientSession = None                  # HTTP client
+user_code_file               = 'luacode/'                      # Location of user code
 
 # TODO: Replace all instances of this with either the connection a temporary cursor
-dbcursor                = database.cursor()               # Cursor to edit the database with
+dbcursor                     = database.cursor()               # Cursor to edit the database with
 
-prefix                  = 'p!'                            # Prefix
-version                 = (1, 8, 0, "Resurrection")       # Version
-intents                 = discord.Intents.default()       # Default intents
-intents.members         = True                            # So that bot can access members
-intents.presences       = True                            # So that the bot can access statusses
-defment                 = discord.AllowedMentions(everyone=False, roles=False, users=False)
-client : discord.Client = discord.Client(                 # Create client
-                                intents=intents,
-                                allowed_mentions=defment) # Sets who can be mentioned
+prefix                       = 'p!'                            # Prefix
+version                      = (1, 8, 1, "Resurrection")       # Version
+intents                      = discord.Intents.default()       # Default intents
+intents.members              = True                            # So that bot can access members
+intents.presences            = True                            # So that the bot can access statusses
+defment                      = discord.AllowedMentions(everyone=False, roles=False, users=False)
+client : discord.Client      = discord.Client(                 # Create client
+                                    loop=loop,
+                                    intents=intents,
+                                    allowed_mentions=defment) # Sets who can be mentioned
+
+asyncio.set_event_loop(loop)
 
 developer_mode : bool = os.path.isfile('developer.lock')
 if developer_mode:
@@ -143,6 +149,13 @@ def clean_filename(s : str):
     from messing with the filesystem.
     """
     return s.replace('/', '_').replace('.', '_').replace('*', '_')
+
+
+def esc_clr_md(s: str):
+    """
+    Escapes possible loguru color markdown, even invalid.
+    """
+    return re.sub(r"(<.+?>)", r"\\\1", str(s))
 
 
 # Why do I keep this here???
@@ -1254,7 +1267,8 @@ async def cat(m):
 
     Shows a random picture of a cat.
     """
-    await m.channel.send(requests.get('https://api.thecatapi.com/v1/images/search').json()[0]['url'])
+    async with httpclient.get('https://api.thecatapi.com/v1/images/search') as response:
+        await m.channel.send((await response.json())[0]['url'])
 
 
 @add_command()
@@ -1264,7 +1278,8 @@ async def dog(m):
 
     Shows a random picture of a dog.
     """
-    await m.channel.send(requests.get('https://api.thedogapi.com/v1/images/search').json()[0]['url'])
+    async with httpclient.get('https://api.thedogapi.com/v1/images/search') as response:
+        await m.channel.send((await response.json())[0]['url'])
 
 @add_command(['fox'])
 async def _(m):
@@ -1273,7 +1288,8 @@ async def _(m):
 
     Shows a random picture of a fox.
     """
-    await m.channel.send(requests.get('https://randomfox.ca/floof/').json()['image'])
+    async with httpclient.get('https://randomfox.ca/floof/') as response:
+        await m.channel.send((await response.json())['image'])
 
 @add_command(timeout=600)
 async def ownermail(m):
@@ -1470,6 +1486,10 @@ async def on_ready():  # Executes when bot connects
         await client.change_presence(status=discord.Status.dnd,
                                      activity=discord.Activity(type=discord.ActivityType.listening,
                                                                name='Potato'))
+
+    global httpclient
+    httpclient = aiohttp.ClientSession()
+    log.info("<lm>Created HTTP client</lm>")
 
     christmas = cryptography.fernet.Fernet(os.environ.get("CHRISTMAS_KEY"))
     with open('christmas2021/christmas1', 'rb') as f:
@@ -1773,9 +1793,40 @@ async def on_error(event: str, *args, **kwargs):
 keep_alive.keep_alive()  # Starts a webserver to be pinged.
 
 log.info("<lg>Starting Discord client</lg>")
-client.run(os.environ.get("DISCORD_BOT_TOKEN"))
 
-log.info("<ly>Closing databases</ly>")
+try:
+    loop.run_until_complete(client.start(os.environ.get("DISCORD_BOT_TOKEN")))
+except KeyboardInterrupt:
+    if not client.is_closed():
+        loop.run_until_complete(client.close())
+
+async def async_on_exit():
+    # https://github.com/aio-libs/aiohttp/issues/1925
+    log.info("<ly><i>Waiting a short while to let connections close</i></ly>")
+    await asyncio.sleep(0.6)
+
+    await httpclient.close()
+    log.info("<lm>Closed HTTP client</lm>")
+
+
+loop.run_until_complete(async_on_exit())
+
+def on_exit():
+    tasks = [t for t in asyncio.all_tasks(loop=loop) if not t.done()]
+    if tasks:
+        log.warning(f"<ly>Cancelling {len(tasks)} unfinished task{'' if len(tasks) == 1 else 's'}</ly>")
+
+        for task in tasks:
+            task.cancel()
+
+        loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+
+on_exit()
+
+loop.run_until_complete(loop.shutdown_asyncgens())
+loop.close()
+log.info("<le>Closed asyncio loop</le>")
+
 database.close()
 engdict_database.close()
 log.info("<lg>Closed databases</lg>")
