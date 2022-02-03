@@ -17,7 +17,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 7, 1, "Resurrection")       # Version
+version                 = (1, 7, 2, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -988,7 +988,7 @@ async def ping(m):
     Shows the bot's response time in seconds.
     """
     await m.channel.send(
-        f'Pong! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}` seconds to respond'
+        f'Pong! `{(datetime.datetime.now(datetime.timezone.utc) - m.created_at).total_seconds()}` seconds to respond'
     )
 
 
@@ -1000,7 +1000,7 @@ async def pong(m):
     Shows the bot's response time in seconds.
     """
     await m.channel.send(
-        f'Ping! `{(datetime.datetime.utcnow() - m.created_at).total_seconds()}` seconds to respond'
+        f'Ping! `{(datetime.datetime.now(datetime.timezone.utc) - m.created_at).total_seconds()}` seconds to respond'
     )
 
 
