@@ -10,8 +10,9 @@ with warnings.catch_warnings():
 
 import sys
 import os
-from keep_alive import keep_alive # repl.it keep_alive function
-from cryptography.fernet import Fernet
+import random
+import keep_alive # repl.it keep_alive function
+import cryptography.fernet
 import potatoscript
 import art
 import asyncio
@@ -23,9 +24,12 @@ import sqlite3 as sqlite
 
 database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
+
+# TODO: Replace all instances of this with either the connection a temporary cursor
 dbcursor                = database.cursor()               # Cursor to edit the database with
+
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 7, 3, "Resurrection")       # Version
+version                 = (1, 8, 0, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -34,9 +38,12 @@ client : discord.Client = discord.Client(                 # Create client
                                 intents=intents,
                                 allowed_mentions=defment) # Sets who can be mentioned
 
-christmas = Fernet(os.environ.get("CHRISTMAS_KEY"))
-
 developer_mode : bool = os.path.isfile('developer.lock')
+if developer_mode:
+    log.info("<ly>Developer mode is</ly> <lr><b>enabled</b></lr>")
+else:
+    log.info("<ly>Developer mode is</ly> <lg><b>disabled</b></lg>")
+
 onreadyonce = False # Stops on_ready from firing multiple times
 unchanginglist = [] # Used by the Unchanging role to check
                     # if the bot forced a rename, so the event is ignored next
@@ -56,6 +63,9 @@ engdict_db_cursor.execute("CREATE TABLE words (word TEXT)")
 with open('english_dict_a.txt') as engdict:
     engdict_db_cursor.executemany("INSERT INTO words (word) VALUES (?)", ((line[:-1],) for line in engdict.readlines()))
 engdict_db_cursor.close()
+
+with open("magicball_lines.txt", "r") as f:
+    magicball_lines = tuple(x for x in map(lambda x: x.rstrip(), f.readlines()) if x)
 
 class Command():
     """
@@ -1309,22 +1319,6 @@ async def modmail(m):
             f'Usage: `{prefix}modmail [message]`', delete_after=2)
 
 
-# @add_command2(('bogosort', 'bogo'))
-# async def bogosort(m):
-#     from random import shuffle
-#     amount = 0
-#     board = boardgen()
-#     if len(m.content.split()) < 2:
-#         return
-#     message = await m.channel.send('Starting bogosort!')
-#     sort = [int(x) if float(x)%1 == 0 else float(x) for x in m.content.split()[1:]]
-#     while not all(x <= y for x, y in zip(sort, sort[1:])):
-#         await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``')
-#         shuffle(sort)
-#         amount += 1
-
-#     await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
-
 
 @add_command(('bogosort', 'bogo'), 45)
 async def bogosort(m):
@@ -1439,6 +1433,24 @@ async def insertionsort(m):
     remove_sort_from_db(message.id)
 
 
+@add_command(("8ball", "magicball"))
+async def _(m: discord.Message):
+    """
+    {prefix}8ball
+    {prefix}magicball
+
+    Tells wisdom
+    """
+    if random.randint(0, 9) < 9:
+        await m.channel.send(random.choice(magicball_lines))
+    else:
+        message = database.execute("SELECT quote FROM quotes ORDER BY RANDOM() LIMIT 1").fetchone()
+        if message:
+            message = message[0]
+        else:
+            message = "My mind is empty!"
+        await m.channel.send(message)
+
 
 @client.event
 async def on_ready():  # Executes when bot connects
@@ -1459,6 +1471,7 @@ async def on_ready():  # Executes when bot connects
                                      activity=discord.Activity(type=discord.ActivityType.listening,
                                                                name='Potato'))
 
+    christmas = cryptography.fernet.Fernet(os.environ.get("CHRISTMAS_KEY"))
     with open('christmas2021/christmas1', 'rb') as f:
         christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
 
@@ -1757,9 +1770,12 @@ async def on_message_edit(mb, ma):
 async def on_error(event: str, *args, **kwargs):
     log.exception("Exception in event {event}: {ex}", event=event, ex=traceback.TracebackException(*sys.exc_info()))
 
+keep_alive.keep_alive()  # Starts a webserver to be pinged.
 
-keep_alive()  # Starts a webserver to be pinged.
+log.info("<lg>Starting Discord client</lg>")
 client.run(os.environ.get("DISCORD_BOT_TOKEN"))
 
+log.info("<ly>Closing databases</ly>")
 database.close()
 engdict_database.close()
+log.info("<lg>Closed databases</lg>")
