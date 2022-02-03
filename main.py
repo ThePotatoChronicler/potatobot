@@ -1,13 +1,21 @@
+# Loguru logging
+import loguru
+log = loguru.logger.opt(colors=True)
+log.info("<e>Initialization</e>")
+
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", Warning)
+    import nextcord as discord
+
+import sys
 import os
 from keep_alive import keep_alive # repl.it keep_alive function
-
-print('Starting Potato Overlord!')
-
 from cryptography.fernet import Fernet
 import potatoscript
 import art
 import asyncio
-import nextcord as discord
+import traceback
 import requests
 import datetime
 import bitstring
@@ -17,7 +25,7 @@ database                = sqlite.Connection('data.db')    # Database
 user_code_file          = 'luacode/'                      # Location of user code
 dbcursor                = database.cursor()               # Cursor to edit the database with
 prefix                  = 'p!'                            # Prefix
-version                 = (1, 7, 2, "Resurrection")       # Version
+version                 = (1, 7, 3, "Resurrection")       # Version
 intents                 = discord.Intents.default()       # Default intents
 intents.members         = True                            # So that bot can access members
 intents.presences       = True                            # So that the bot can access statusses
@@ -1434,6 +1442,7 @@ async def insertionsort(m):
 
 @client.event
 async def on_ready():  # Executes when bot connects
+    log.info("<ly>Ready!</ly>")
 
     global onreadyonce
     if onreadyonce:
@@ -1444,7 +1453,6 @@ async def on_ready():  # Executes when bot connects
     await client.change_presence(
         activity=discord.Activity(
                                   type=discord.ActivityType.listening, name=f'{prefix} >w>'))
-    print('Potato Overlord is ready!')
 
     if developer_mode:
         await client.change_presence(status=discord.Status.dnd,
@@ -1601,6 +1609,8 @@ async def on_ready():  # Executes when bot connects
 
         await asyncio.gather(*lst)
 
+    log.info('<lg>Wake-up initialization finished</lg>')
+
     # Begin
     await asyncio.gather(managetmp(),
                          managesorts(),
@@ -1609,12 +1619,11 @@ async def on_ready():  # Executes when bot connects
 
 @client.event
 async def on_disconnect():  # Executes when bot loses connection
-    print('Disconnected!')
+    log.info('<lr>Disconnected!</lr>')
 
 
 @client.event
 async def on_message(m):  # Executes on every message
-
     # Exit if message was sent by the bot
     if m.author == client.user or m.author.bot:
         return
@@ -1667,8 +1676,7 @@ async def on_message(m):  # Executes on every message
                 await m.channel.send('Command doesn\'t exist!')
             except Exception as err:
                 spamDict[m.author.id] -= 1
-                print(f"\x1b[1;91mAn exception occured inside '{cmdname}' and is being re-raised:\x1b[22;39m")
-                raise err from None
+                log.exception("<lr><b>An exception occured inside '{cmdname}':</b></lr> {err}", cmdname=cmdname, err=err)
             else:
                 await asyncio.sleep(comdict['timeout'])
                 spamDict[m.author.id] -= 1
@@ -1743,6 +1751,11 @@ async def on_member_update(bm : discord.Member, am : discord.Member):
 async def on_message_edit(mb, ma):
     if (ma.channel.name == 'letter_wars' or ma.channel.name == 'letter-wars') and not len(ma.content.strip()) == 1:
         await ma.delete()
+
+
+@client.event
+async def on_error(event: str, *args, **kwargs):
+    log.exception("Exception in event {event}: {ex}", event=event, ex=traceback.TracebackException(*sys.exc_info()))
 
 
 keep_alive()  # Starts a webserver to be pinged.
