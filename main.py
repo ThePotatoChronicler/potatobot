@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 8, 4, "Resurrection")       # Version
+version                      = (1, 9, 0, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1478,15 +1478,31 @@ async def _(m: discord.Message):
 
     Tells wisdom
     """
-    if random.randint(0, 9) < 9:
-        await m.channel.send(random.choice(magicball_lines))
+
+    secret_ticks: re.Match = re.match(r".*_( +)_$", m.content)
+    if secret_ticks:
+        secret_ticks = len(secret_ticks.group(1))
+
+    if secret_ticks:
+        if secret_ticks > len(magicball_lines):
+            message = None
+        else:
+            message = magicball_lines[secret_ticks - 1]
     else:
+        if random.randint(0, 9) < 9:
+            message = random.choice(magicball_lines)
+        else:
+            message = None
+
+    if message is None:
         message = database.execute("SELECT quote FROM quotes ORDER BY RANDOM() LIMIT 1").fetchone()
         if message:
+            # Unpack fetchone result
             message = message[0]
         else:
             message = "My mind is empty!"
-        await m.channel.send(message)
+
+    await m.channel.send(message)
 
 
 @client.event
