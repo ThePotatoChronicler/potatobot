@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 2, "Resurrection")       # Version
+version                      = (1, 9, 3, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1660,7 +1660,7 @@ async def on_ready():  # Executes when bot connects
             lst.append(funcs[t](*args))
 
         if lst:
-            log.info(f"<ly>Managing {len(lst)} saved sorts</ly>")
+            log.info(f"<ly>Managing {len(lst)} saved sort{'' if len(lst) == 1 else 's'}</ly>")
         await asyncio.gather(*lst)
 
     # Begin
@@ -1804,8 +1804,9 @@ async def on_member_update(bm : discord.Member, am : discord.Member):
 
 @client.event
 async def on_message_edit(mb, ma):
-    if (ma.channel.name == 'letter_wars' or ma.channel.name == 'letter-wars') and not len(ma.content.strip()) == 1:
-        await ma.delete()
+    if not isinstance(ma.channel, discord.DMChannel):
+        if (ma.channel.name == 'letter_wars' or ma.channel.name == 'letter-wars') and not len(ma.content.strip()) == 1:
+            await ma.delete()
 
 
 @client.event
