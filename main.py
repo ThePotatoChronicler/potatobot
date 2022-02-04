@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 1, "Resurrection")       # Version
+version                      = (1, 9, 2, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1812,13 +1812,6 @@ async def on_message_edit(mb, ma):
 async def on_error(event: str, *args, **kwargs):
     log.exception("Exception in event {event}: {ex}", event=event, ex=traceback.TracebackException(*sys.exc_info()))
 
-async def async_on_exit():
-    # https://github.com/aio-libs/aiohttp/issues/1925
-    log.info("<ly><i>Waiting a short while to let connections close</i></ly>")
-    await asyncio.sleep(0.6)
-
-    await httpclient.close()
-    log.info("<lm>Closed HTTP client</lm>")
 
 def on_start():
 
@@ -1860,6 +1853,14 @@ try:
 except KeyboardInterrupt:
     if not client.is_closed():
         loop.run_until_complete(client.close())
+
+async def async_on_exit():
+    # https://github.com/aio-libs/aiohttp/issues/1925
+    log.info("<ly><i>Waiting a short while to let connections close</i></ly>")
+    await asyncio.sleep(0.6)
+
+    await httpclient.close()
+    log.info("<lm>Closed HTTP client</lm>")
 
 loop.run_until_complete(async_on_exit())
 
