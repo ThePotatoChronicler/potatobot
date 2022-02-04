@@ -11,6 +11,7 @@ with warnings.catch_warnings():
 import sys
 import os
 import random
+import functools
 import re
 import keep_alive # repl.it keep_alive function
 import cryptography.fernet
@@ -32,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 8, 3, "Resurrection")       # Version
+version                      = (1, 8, 4, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -83,6 +84,14 @@ class Command():
 
 class DoesNotExist(Exception):
     pass
+
+@functools.lru_cache(maxsize=3)
+def formatversion(v: tuple):
+    """
+    Returns formatted version string, which must be like:
+    (int, int, int, str)
+    """
+    return f"{'.'.join( str(n) for n in version[0:3] )} - {v[3]}"
 
 def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
     def wrapper(function):
@@ -998,7 +1007,7 @@ async def _(m):
     from inspect import cleandoc
 
     v = version
-    fversion = f"{'.'.join( str(n) for n in v[0:3] )} - {v[3]}"
+    fversion = formatversion(version)
 
     await m.channel.send(
         cleandoc(
@@ -1807,6 +1816,7 @@ keep_alive.keep_alive()  # Starts a webserver to be pinged.
 log.info("<lg>Starting Discord client</lg>")
 
 try:
+    log.info(f"<lm>Running Potatobot version {formatversion(version)}</lm>")
     loop.run_until_complete(client.start(os.environ.get("DISCORD_BOT_TOKEN")))
 except KeyboardInterrupt:
     if not client.is_closed():
