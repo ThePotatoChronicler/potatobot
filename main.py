@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 0, "Resurrection")       # Version
+version                      = (1, 9, 1, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1524,26 +1524,6 @@ async def on_ready():  # Executes when bot connects
                                      activity=discord.Activity(type=discord.ActivityType.listening,
                                                                name='Potato'))
 
-    global httpclient
-    httpclient = aiohttp.ClientSession()
-    log.info("<lm>Created HTTP client</lm>")
-
-    christmas = cryptography.fernet.Fernet(os.environ.get("CHRISTMAS_KEY"))
-    with open('christmas2021/christmas1', 'rb') as f:
-        christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
-
-    with open('christmas2021/christmas2', 'rb') as f:
-        christmasDict['christmas2'] = compile(christmas.decrypt(f.read()), "christmas2.py", 'exec')
-
-    with open('christmas2021/christmas3', 'rb') as f:
-        christmasDict['christmas3'] = compile(christmas.decrypt(f.read()), "christmas3.py", 'exec')
-
-    with open('christmas2021/christmas4', 'rb') as f:
-        christmasDict['christmas4'] = compile(christmas.decrypt(f.read()), "christmas4.py", 'exec')
-
-    with open('christmas2021/christmas2021', 'rb') as f:
-        christmasDict['christmas2021'] = compile(christmas.decrypt(f.read()), "christmas2021.py", 'exec')
-
     # Checks for new guilds, adds them to database
     async def managenewguilds():
         while True:
@@ -1577,6 +1557,8 @@ async def on_ready():  # Executes when bot connects
                         lst.append(managetmpch(ch))
                     break
 
+        if lst:
+            log.info(f"<ly>Managing {len(lst)} temporary channel{'' if len(lst) == 1 else 's'} from past</ly>")
         await asyncio.gather(*lst)
 
     # Manage sorts that were saved and left unfinished before crash or reboot
@@ -1677,15 +1659,18 @@ async def on_ready():  # Executes when bot connects
             t, *args = fetched
             lst.append(funcs[t](*args))
 
+        if lst:
+            log.info(f"<ly>Managing {len(lst)} saved sorts</ly>")
         await asyncio.gather(*lst)
 
-    log.info('<lg>Wake-up initialization finished</lg>')
-
     # Begin
-    await asyncio.gather(managetmp(),
-                         managesorts(),
-                         managenewguilds())
+    for func in (managetmp, managesorts, managenewguilds):
+        task = loop.create_task(
+            func(),
+            name=f"potatobot: background_management: {func.__name__}"
+        )
 
+    log.info('<lg>Wake-up initialization finished</lg>')
 
 @client.event
 async def on_disconnect():  # Executes when bot loses connection
@@ -1827,17 +1812,6 @@ async def on_message_edit(mb, ma):
 async def on_error(event: str, *args, **kwargs):
     log.exception("Exception in event {event}: {ex}", event=event, ex=traceback.TracebackException(*sys.exc_info()))
 
-keep_alive.keep_alive()  # Starts a webserver to be pinged.
-
-log.info("<lg>Starting Discord client</lg>")
-
-try:
-    log.info(f"<lm>Running Potatobot version {formatversion(version)}</lm>")
-    loop.run_until_complete(client.start(os.environ.get("DISCORD_BOT_TOKEN")))
-except KeyboardInterrupt:
-    if not client.is_closed():
-        loop.run_until_complete(client.close())
-
 async def async_on_exit():
     # https://github.com/aio-libs/aiohttp/issues/1925
     log.info("<ly><i>Waiting a short while to let connections close</i></ly>")
@@ -1846,6 +1820,46 @@ async def async_on_exit():
     await httpclient.close()
     log.info("<lm>Closed HTTP client</lm>")
 
+def on_start():
+
+    christmas = cryptography.fernet.Fernet(os.environ.get("CHRISTMAS_KEY"))
+    with open('christmas2021/christmas1', 'rb') as f:
+        christmasDict['christmas1'] = compile(christmas.decrypt(f.read()), "christmas1.py", 'exec')
+
+    with open('christmas2021/christmas2', 'rb') as f:
+        christmasDict['christmas2'] = compile(christmas.decrypt(f.read()), "christmas2.py", 'exec')
+
+    with open('christmas2021/christmas3', 'rb') as f:
+        christmasDict['christmas3'] = compile(christmas.decrypt(f.read()), "christmas3.py", 'exec')
+
+    with open('christmas2021/christmas4', 'rb') as f:
+        christmasDict['christmas4'] = compile(christmas.decrypt(f.read()), "christmas4.py", 'exec')
+
+    with open('christmas2021/christmas2021', 'rb') as f:
+        christmasDict['christmas2021'] = compile(christmas.decrypt(f.read()), "christmas2021.py", 'exec')
+
+
+async def async_on_start():
+
+    global httpclient
+    httpclient = aiohttp.ClientSession()
+    log.info("<lm>Created HTTP client</lm>")
+
+
+on_start()
+loop.run_until_complete(async_on_start())
+
+keep_alive.keep_alive()  # Starts a webserver to be pinged.
+
+log.info("<lg>Starting Discord client</lg>")
+
+try:
+    log.info(f"<lm>Running Potatobot version {formatversion(version)}</lm>")
+    # XXX Start point
+    loop.run_until_complete(client.start(os.environ.get("DISCORD_BOT_TOKEN")))
+except KeyboardInterrupt:
+    if not client.is_closed():
+        loop.run_until_complete(client.close())
 
 loop.run_until_complete(async_on_exit())
 
