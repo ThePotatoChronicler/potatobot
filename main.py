@@ -32,7 +32,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 8, 1, "Resurrection")       # Version
+version                      = (1, 8, 2, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1321,14 +1321,18 @@ async def modmail(m):
     if len(m.content.split()) > 1:
         for role in m.guild.roles:
             if role.name == 'Moderator':
+                mes = " ".join(m.content.split()[1:])
+                message = f'Channel: {m.channel.mention} in {m.guild.name}\nMember: {m.author.mention} ({m.author})\nMessage: {mes}'
                 for member in role.members:
-                    await member.send(
-                        f'Channel: {m.channel.mention} in {m.guild.name}\nMember: {m.author.mention} ({m.author.name}#{m.author.discriminator})\nMessage: {" ".join(m.content.split()[1:])}'
-                    )
+                    try:
+                        await member.send(message)
+                    except discord.errors.Forbidden as err:
+                        if err.code == 50007: # Couldn't send message to user
+                            pass
+                        else:
+                            raise
                 if not m.guild.owner in role.members:
-                    await m.guild.owner.send(
-                        f'**Modmail**\nChannel: {m.channel.mention} in {m.guild.name}\nMember: {m.author.mention} ({m.author.name}#{m.author.discriminator})\nMessage: {" ".join(m.content.split()[1:])}'
-                    )
+                    await m.guild.owner.send('**Modmail**\n' + message)
                 break
     else:
         await m.channel.send(
