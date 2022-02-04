@@ -32,7 +32,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 8, 2, "Resurrection")       # Version
+version                      = (1, 8, 3, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1326,7 +1326,15 @@ async def modmail(m):
                 for member in role.members:
                     try:
                         await member.send(message)
+
+                    # Right now, there two cases are the same,
+                    # but they might be different in the future
                     except discord.errors.Forbidden as err:
+                        if err.code == 50007: # Couldn't send message to user
+                            pass
+                        else:
+                            raise
+                    except discord.errors.HTTPException as err:
                         if err.code == 50007: # Couldn't send message to user
                             pass
                         else:
