@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 3, "Resurrection")       # Version
+version                      = (1, 9, 4, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -110,7 +110,7 @@ def add_command(alias=None, timeout=5, emoji=False, *args, **kwargs):
 
     return wrapper
 
-def save_sort_to_db(t, m_id, c_id, a, l):
+def save_sort_to_db(t: int, m_id: int, c_id: int, a: int , l: int):
     li = ' '.join(str(i) for i in l)
     dbcursor.execute('SELECT message FROM sorts WHERE message = ?', (m_id, ))
 
@@ -122,6 +122,7 @@ def save_sort_to_db(t, m_id, c_id, a, l):
     database.commit()
 
 def remove_sort_from_db(m_id):
+    log.debug(f"Deleting sort {m_id = }")
     dbcursor.execute('DELETE FROM sorts WHERE ?', [m_id])
 
     database.commit()
@@ -1383,7 +1384,7 @@ async def bogosort(m):
         amount += 1
 
         if amount % 20 == 0:
-            save_sort_to_db(0, message.id, m.channel.id, amount, sort)
+            save_sort_to_db(0, message.id, message.channel.id, amount, sort)
 
     await message.edit(
         content=
@@ -1419,7 +1420,7 @@ async def bubblesort(m):
             amount += 1
 
             if amount % 20 == 0:
-                save_sort_to_db(1, message.id, m.channel.id, amount, sort)
+                save_sort_to_db(1, message.id, message.channel.id, amount, sort)
 
     await message.edit(
         content=
@@ -1454,7 +1455,7 @@ async def insertionsort(m):
             sort[j + 1] = sort[j]
             j -= 1
             if amount % 20 == 0:
-                save_sort_to_db(2, message.id, m.channel.id, amount, sort)
+                save_sort_to_db(2, message.id, message.channel.id, amount, sort)
             await message.edit(
                 content=f'```{board(sort)}```Comparisons: ``{amount}``')
         else:
@@ -1566,11 +1567,8 @@ async def on_ready():  # Executes when bot connects
         funcs = []
 
         # Bogosort
-        async def f1(m_id, c_id, a, l):
-            try:
-                message = client.get_channel(c_id).get_partial_message(m_id)
-            except AttributeError:
-                return
+        async def bogosort_manager(m_id, c_id, a, l):
+            message = (await client.fetch_channel(c_id)).get_partial_message(m_id)
             from random import shuffle
             amount = a
             sort = [
@@ -1580,8 +1578,8 @@ async def on_ready():  # Executes when bot connects
 
             while not all(x <= y for x, y in zip(sort, sort[1:])):
                 try:
-                    await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``')
-                except discord.errors.NotFound:
+                    message = await message.edit(content=f'```{board(sort)}```Shuffles: ``{amount}``')
+                except discord.errors.NotFound as err:
                     remove_sort_from_db(m_id)
                     return
                 shuffle(sort)
@@ -1590,16 +1588,15 @@ async def on_ready():  # Executes when bot connects
                 if amount % 20 == 0:
                     save_sort_to_db(0, m_id, c_id, amount, sort)
 
-                await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
-
+            await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
 
-        funcs.append(f1)
+        funcs.append(bogosort_manager)
 
         # Bubblesort
-        async def f2(m_id, c_id, a, l):
+        async def bubblesort_manager(m_id, c_id, a, l):
             amount = a
-            message = client.get_channel(c_id).get_partial_message(m_id)
+            message = (await client.fetch_channel(c_id)).get_partial_message(m_id)
             sort = [
                 int(x) if float(x) % 1 == 0 else float(x)
                 for x in l.split(' ')
@@ -1607,7 +1604,7 @@ async def on_ready():  # Executes when bot connects
 
             for i in range(len(sort)):
                 for j in range(len(sort) - 1 - i):
-                    await message.edit(content=f"```{board(sort)}```Comparisons: ``{amount}``")
+                    message = await message.edit(content=f"```{board(sort)}```Comparisons: ``{amount}``")
                     if sort[j] > sort[j + 1]:
                         sort[j], sort[j + 1] = sort[j + 1], sort[j]
                     amount += 1
@@ -1618,11 +1615,11 @@ async def on_ready():  # Executes when bot connects
             await message.edit(content=f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
 
-        funcs.append(f2)
+        funcs.append(bubblesort_manager)
 
-        async def f3(m_id, c_id, a, l):
+        async def insertionsort_manager(m_id, c_id, a, l):
             amount = a
-            message = client.get_channel(c_id).get_partial_message(m_id)
+            message = (await client.fetch_channel(c_id)).get_partial_message(m_id)
             sort = [
                 int(x) if float(x) % 1 == 0 else float(x)
                 for x in l.split(' ')
@@ -1636,12 +1633,12 @@ async def on_ready():  # Executes when bot connects
                     sort[j + 1] = sort[j]
                     j -= 1
                     save_sort_to_db(2, m_id, c_id, amount, sort)
-                    await message.edit(
+                    message = await message.edit(
                         content=f'```{board(sort)}```Comparisons: ``{amount}``')
                 else:
                     amount += 1
                 sort[j + 1] = key
-                await message.edit(
+                message = await message.edit(
                     content=f'```{board(sort)}```Comparisons: ``{amount}``')
 
             await message.edit(
@@ -1650,14 +1647,13 @@ async def on_ready():  # Executes when bot connects
             )
             remove_sort_from_db(m_id)
 
-        funcs.append(f3)
+        funcs.append(insertionsort_manager)
 
         # Restart all saved sorts
         lst = []
         dbcursor.execute('SELECT * FROM sorts')
         for fetched in dbcursor.fetchall():
-            t, *args = fetched
-            lst.append(funcs[t](*args))
+            lst.append(funcs[fetched[0]](*fetched[1:]))
 
         if lst:
             log.info(f"<ly>Managing {len(lst)} saved sort{'' if len(lst) == 1 else 's'}</ly>")
@@ -1738,9 +1734,10 @@ async def on_message(m):  # Executes on every message
 
 
     else:
-        if m.author.id == 185421198094499840 and m.content == 'close':
-            m.channel.send('Closing.')
-            await client.close()
+        if m.author.id == 185421198094499840:
+            if m.content == 'close':
+                m.channel.send('Closing.')
+                await client.close()
 
 
 @client.event
@@ -1832,6 +1829,18 @@ def on_start():
     with open('christmas2021/christmas2021', 'rb') as f:
         christmasDict['christmas2021'] = compile(christmas.decrypt(f.read()), "christmas2021.py", 'exec')
 
+    def loop_exception_handler(l, ctx):
+
+        # Taken from source, because there is no better way to do this
+        log._log(
+            "ERROR", None, False,
+            (ctx['exception'],) + log._options[1:],
+            f"Task {ctx['future'].get_name()} failed with exception {ctx['exception']}",
+            [], []
+        )
+
+    loop.set_exception_handler(loop_exception_handler)
+
 
 async def async_on_start():
 
@@ -1869,6 +1878,7 @@ def on_exit():
     tasks = [t for t in asyncio.all_tasks(loop=loop) if not t.done()]
     if tasks:
         log.warning(f"<ly>Cancelling {len(tasks)} unfinished task{'' if len(tasks) == 1 else 's'}</ly>")
+        log.debug("Tasks cancelled: {}", [t.get_name() for t in tasks])
 
         for task in tasks:
             task.cancel()
