@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 4, "Resurrection")       # Version
+version                      = (1, 9, 5, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -1588,6 +1588,8 @@ async def on_ready():  # Executes when bot connects
                 if amount % 20 == 0:
                     save_sort_to_db(0, m_id, c_id, amount, sort)
 
+                await asyncio.sleep(3)
+
             await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
 
@@ -1612,6 +1614,8 @@ async def on_ready():  # Executes when bot connects
                     if amount % 20 == 0:
                         save_sort_to_db(1, m_id, c_id, amount, sort)
 
+                    await asyncio.sleep(3)
+
             await message.edit(content=f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
 
@@ -1635,11 +1639,13 @@ async def on_ready():  # Executes when bot connects
                     save_sort_to_db(2, m_id, c_id, amount, sort)
                     message = await message.edit(
                         content=f'```{board(sort)}```Comparisons: ``{amount}``')
+                    await asyncio.sleep(3)
                 else:
                     amount += 1
                 sort[j + 1] = key
                 message = await message.edit(
                     content=f'```{board(sort)}```Comparisons: ``{amount}``')
+                await asyncio.sleep(3)
 
             await message.edit(
                 content=
