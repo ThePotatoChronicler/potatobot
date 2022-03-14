@@ -33,7 +33,7 @@ user_code_file               = 'luacode/'                      # Location of use
 dbcursor                     = database.cursor()               # Cursor to edit the database with
 
 prefix                       = 'p!'                            # Prefix
-version                      = (1, 9, 5, "Resurrection")       # Version
+version                      = (1, 9, 6, "Resurrection")       # Version
 intents                      = discord.Intents.default()       # Default intents
 intents.members              = True                            # So that bot can access members
 intents.presences            = True                            # So that the bot can access statusses
@@ -73,6 +73,8 @@ engdict_db_cursor.close()
 
 with open("magicball_lines.txt", "r") as f:
     magicball_lines = tuple(x for x in map(lambda x: x.rstrip(), f.readlines()) if x)
+
+TEMP_SORT_SLEEP_DURATION : int = 10
 
 class Command():
     """
@@ -1588,7 +1590,7 @@ async def on_ready():  # Executes when bot connects
                 if amount % 20 == 0:
                     save_sort_to_db(0, m_id, c_id, amount, sort)
 
-                await asyncio.sleep(3)
+                await asyncio.sleep(TEMP_SORT_SLEEP_DURATION)
 
             await message.edit(content=f"```{board(sort)}```Sorted in {amount} shuffle{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
@@ -1614,7 +1616,7 @@ async def on_ready():  # Executes when bot connects
                     if amount % 20 == 0:
                         save_sort_to_db(1, m_id, c_id, amount, sort)
 
-                    await asyncio.sleep(3)
+                    await asyncio.sleep(TEMP_SORT_SLEEP_DURATION)
 
             await message.edit(content=f"```{board(sort)}```Sorted in {amount} comparison{'' if amount == 1 else 's'}! {sort}")
             remove_sort_from_db(m_id)
@@ -1645,7 +1647,7 @@ async def on_ready():  # Executes when bot connects
                 sort[j + 1] = key
                 message = await message.edit(
                     content=f'```{board(sort)}```Comparisons: ``{amount}``')
-                await asyncio.sleep(3)
+                await asyncio.sleep(TEMP_SORT_SLEEP_DURATION)
 
             await message.edit(
                 content=
