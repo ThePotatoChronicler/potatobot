@@ -1,0 +1,35 @@
+{
+  "name": "potatobot",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "node build.mjs",
+    "buildReplit": "node build.mjs --replit",
+    "watch": "node build.mjs --watch",
+    "start": "node --enable-source-maps dist/main.mjs",
+    "lint": "eslint .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@discordjs/builders": "^1.3.0",
+    "discord.js": "^14.6.0",
+    "dotenv": "^16.0.3",
+    "mongodb": "^4.11.0",
+    "path-exists": "^5.0.0",
+    "pino": "^8.7.0",
+    "pino-pretty": "^9.1.1",
+    "yargs": "^17.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.7",
+    "@types/yargs": "^17.0.13",
+    "@typescript-eslint/eslint-plugin": "^5.41.0",
+    "@typescript-eslint/parser": "^5.41.0",
+    "esbuild": "^0.15.12",
+    "eslint": "^8.26.0",
+    "pnpm": "^7.14.0",
+    "typescript": "^4.8.4"
+  }
+}

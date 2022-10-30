@@ -1,0 +1,40 @@
+// Based on @tsconfig/node18-strictest-esm
+// Copied here since not everything respects the `extends` property
+
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": [
+    "src/**/*",
+    "build.mjs"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "display": "Node 18 + ESM + Strictest",
+  "compilerOptions": {
+    "lib": [
+      "es2022"
+    ],
+    "module": "es2022",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "importsNotUsedAsValues": "error",
+    "checkJs": true,
+    "resolveJsonModule": true
+  }
+}
+// vim: ft=jsonc
