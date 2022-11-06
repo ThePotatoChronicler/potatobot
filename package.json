@@ -1,6 +1,6 @@
 {
   "name": "potatobot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "build": "node build.mjs",
     "buildReplit": "node build.mjs --replit",
@@ -14,22 +14,26 @@
   "type": "module",
   "dependencies": {
     "@discordjs/builders": "^1.3.0",
+    "common-tags": "^1.8.2",
     "discord.js": "^14.6.0",
     "dotenv": "^16.0.3",
+    "make-fetch-happen": "^11.0.1",
     "mongodb": "^4.11.0",
     "path-exists": "^5.0.0",
     "pino": "^8.7.0",
     "pino-pretty": "^9.1.1",
-    "yargs": "^17.6.0"
+    "yargs": "^17.6.2"
   },
   "devDependencies": {
-    "@types/node": "^18.11.7",
+    "@types/common-tags": "^1.8.1",
+    "@types/make-fetch-happen": "^10.0.0",
+    "@types/node": "^18.11.9",
     "@types/yargs": "^17.0.13",
-    "@typescript-eslint/eslint-plugin": "^5.41.0",
-    "@typescript-eslint/parser": "^5.41.0",
-    "esbuild": "^0.15.12",
-    "eslint": "^8.26.0",
-    "pnpm": "^7.14.0",
+    "@typescript-eslint/eslint-plugin": "^5.42.0",
+    "@typescript-eslint/parser": "^5.42.0",
+    "esbuild": "^0.15.13",
+    "eslint": "^8.27.0",
+    "pnpm": "^7.14.2",
     "typescript": "^4.8.4"
   }
 }
