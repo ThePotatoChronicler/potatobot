@@ -1,4 +1,4 @@
-import { build } from "esbuild";
+import * as esbuild from "esbuild";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -8,6 +8,12 @@ const argv = await yargs(hideBin(process.argv))
 	.argv;
 
 const replit = argv["--replit"] === true;
+const watch = argv["--watch"] ?? false;
+
+if (watch) {
+	console.error("'--watch' temporarily removed because esbuild spontaneously exits when using context")
+	process.exit(1);
+}
 
 const outfile = (() => {
 	if (replit) {
@@ -23,7 +29,7 @@ const minify = (() => {
 	return false;
 })();
 
-await build({
+await esbuild.build({
 	entryPoints: [ "src/main.ts" ],
 	outfile,
 	format: "esm",
@@ -32,7 +38,6 @@ await build({
 		"node18"
 	],
 	sourcemap: "inline",
-	watch: argv["--watch"] ?? false,
 	bundle: true,
 	minify,
 	external: [

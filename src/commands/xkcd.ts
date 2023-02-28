@@ -1,7 +1,7 @@
 import { randomInt } from "crypto";
-import type { ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder } from "discord.js";
 import { fetch } from "../fetch";
-import type { XKCDResponse } from "../types";
+import type { SlashCommand, SlashCommandContext, XKCDResponse } from "../types";
 
 const headers = {
 	"accept": "application/json",
@@ -9,7 +9,7 @@ const headers = {
 
 const latest_url = "https://xkcd.com/info.0.json";
 
-export default async function handler(interaction: ChatInputCommandInteraction) {
+export async function handler({ interaction }: SlashCommandContext) {
 	const xkcd = interaction.options.getInteger("id", false);
 	let content;
 	let ephemeral = false;
@@ -35,3 +35,27 @@ export default async function handler(interaction: ChatInputCommandInteraction) 
 		ephemeral,
 	})
 }
+
+export const name = "xkcd";
+
+export function makeBuilder() {
+	const builder = new SlashCommandBuilder();
+	builder
+		.setName(name)
+		.setDescription("Sends a random xkcd comic, or a specific one")
+		.addIntegerOption(option =>
+			option
+				.setName("id").setRequired(false)
+				.setDescription("Numeric ID of the comic")
+				.setMinValue(1)
+		);
+
+	return builder;
+}
+
+const command: SlashCommand = {
+	handler,
+	name,
+	makeBuilder,
+};
+export default command;

@@ -1,24 +1,13 @@
-import { ContextMenuCommandBuilder, REST, Routes, SlashCommandBuilder } from "discord.js";
+import { REST, Routes } from "discord.js";
 import type { MongoClient } from "mongodb";
+import { slashCommands } from "./commands";
 import { applicationID, discordToken } from "./env";
 import { logger } from "./logger";
 
 function getGlobalSlashCommands() {
-	return [
-		new SlashCommandBuilder()
-			.setName("xkcd")
-			.setDescription("Sends a random xkcd comic, or a specific one")
-			.addIntegerOption(option =>
-				option
-					.setName("id").setRequired(false)
-					.setDescription("Numeric ID of the comic")
-					.setMinValue(1)
-			),
-		new SlashCommandBuilder()
-			.setName("version")
-			.setDescription("Sends the version of the bot")
-	];
+	return slashCommands.map(c => c.makeBuilder());
 }
+
 
 function getGlobalContextCommands() {
 	return [
@@ -38,6 +27,7 @@ function getGlobalCommands() {
 async function registerGlobalCommands(db: MongoClient) {
 	const rest = new REST().setToken(discordToken);
 	const cmds = getGlobalCommands();
+
 	const cmdjson = cmds.map(c => c.toJSON());
 	const cmdstring = JSON.stringify(cmdjson);
 
