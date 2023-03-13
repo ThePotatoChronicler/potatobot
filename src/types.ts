@@ -1,5 +1,5 @@
 import type { ChatInputCommandInteraction, ColorResolvable, SlashCommandBuilder } from "discord.js";
-import type { MongoClient } from "mongodb";
+import type { ClientSession, MongoClient } from "mongodb";
 
 export type StringNum = `${number}`;
 
@@ -74,7 +74,7 @@ export type FetchedSetting =
 	| BooleanSetting
 	| NumberSetting
 
-type NonfetchedSetting<T extends FetchedSetting> = Omit<T, "currentValue" | "guild">
+type NonfetchedSetting<T extends FetchedSetting> = Omit<T, "currentValue" | keyof Omit<FetchedSettingMetadata, keyof SettingMetadata>>
 
 export type Setting = NonfetchedSetting<FetchedSetting>
 
@@ -99,6 +99,7 @@ export interface DBInteractionData {
 export interface SettingsUI extends DBInteractionData {
 	interactionType: "commands/settings_ui",
 	guild: string,
+	channel: string,
 	selectedSetting: string,
 }
 
@@ -108,3 +109,5 @@ export interface DBGuildSettingsData {
 		[name: string]: FetchedSetting["currentValue"], // Represents any valid value
 	}
 }
+
+export type WithMongoSession<T> = T & { session: ClientSession }

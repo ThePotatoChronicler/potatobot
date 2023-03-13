@@ -63,6 +63,7 @@ export async function handler({ interaction, mongodb }: SlashCommandContext) {
 			const col = mongodb.db("global").collection<DBInteractionData>("interactions");
 			const doc: SettingsUI = {
 				guild,
+				channel: interaction.channelId,
 				interactionId: interactionReply.id,
 				interactionType: "commands/settings_ui",
 				selectedSetting: setting.name,

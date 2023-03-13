@@ -7,6 +7,7 @@ import { replitStart } from "./replit_keepalive";
 import { slashCommandsHandlerMap } from "./commands";
 import { constructHandler as constructElevatorHandler } from "./elevator_handler";
 import { handler as messageComponentHandler } from "./message_component_handler";
+// import { setupSettingsChangeHandler } from "./settings_change_handler";
 
 if (environment === 'replit') {
 	logger.info("Starting replit keep_alive");
@@ -25,6 +26,7 @@ const client = new Client({
 });
 
 const elevatorHandler = constructElevatorHandler(client, dbclient);
+// const settingsChangeHandler = setupSettingsChangeHandler({ client, mongodb: dbclient });
 
 let exitCalled = false;
 const exitListener = () => {
@@ -40,6 +42,9 @@ const exitListener = () => {
 			}
 			logger.error({ error: e as unknown }, "Error occurred in elevator handler");
 		});
+
+		// settingsChangeHandler[0].abort();
+		// await settingsChangeHandler[1];
 
 		client.destroy();
 		process.exit(0);

@@ -50,7 +50,7 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 	}
 
 	if (!interaction.member.permissions.has("ManageGuild")) {
-		await interaction.reply({
+		await interaction.followUp({
 			content: "You need the 'Manage Guild' permission",
 			ephemeral: true,
 		})
@@ -71,14 +71,36 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 	const guild = interaction.guildId;
 	const currentSettings: DBGuildSettingsData = await fetchCurrentSettings(ctx, guild);
 
+	let shownSetting: Setting = setting;
+
 	const updated: boolean = (() => {
 		const cs = currentSettings.settings;
 
-		const match = interaction.customId.match(/^commands\/settings_ui:boolean_(off|on)$/);
-		if (match !== null) {
-			const toggle = match[1] as "on" | "off";
-			cs[setting.name] = toggle === "on";
-			return true;
+		{
+			const match = interaction.customId.match(/^commands\/settings_ui:boolean_(off|on)$/);
+			if (match !== null) {
+				const toggle = match[1] as "on" | "off";
+				cs[setting.name] = toggle === "on";
+				return true;
+			}
+		}
+
+		{
+			const match = interaction.customId.match(/^commands\/settings_ui:page_(prev|next)$/)
+			if (match !== null) {
+				const direction = match[1] as "prev" | "next";
+				const index = getSettingIndex(setting.name);
+				const newIndex = index + (direction === "prev" ? -1 : 1);
+
+				const newSettingName = Array.from(settingsMap.keys())[newIndex];
+				if (newSettingName === undefined) {
+					shownSetting = settings[0] as Setting;
+					return true;
+				}
+
+				shownSetting = settingsMap.get(newSettingName) as Setting;
+				return true;
+			}
 		}
 
 		// We didn't update anything
@@ -87,6 +109,23 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 
 	if (updated) {
 		await updateSettings(ctx, guild, currentSettings);
+
+		const currentValue = currentSettings.settings[shownSetting.name] ?? shownSetting.defaultValue;
+		if (currentValue === undefined) {
+			logger.error("Unexpected undefined setting");
+			return;
+		}
+
+		const fetchedSetting: FetchedSetting = {
+			...shownSetting,
+			currentValue,
+			guild,
+		} as FetchedSetting;
+
+		await interaction.editReply({
+			embeds: [createEmbedForFetchedSetting(fetchedSetting)],
+			components: createComponentsFromSetting(fetchedSetting),
+		});
 		return;
 	}
 
@@ -109,11 +148,23 @@ export interface FetchSettingValueContext {
 	mongodb: MongoClient,
 	session?: ClientSession,
 
-	setting: Setting,
+	setting: Setting | string,
 	guild: string,
 }
 
 export async function fetchSettingValue({ mongodb, setting, guild, session }: FetchSettingValueContext): Promise<FetchedSetting> {
+	let realSetting;
+	if (typeof setting === "string") {
+		const mappedSetting = settingsMap.get(setting);
+		if (mappedSetting === undefined) {
+			logger.error({ setting }, "Received non-existent setting name");
+			throw Error("Setting doesn't exist");
+		}
+		realSetting = mappedSetting;
+	} else {
+		realSetting = setting;
+	}
+
 	const col = mongodb.db("global").collection<DBGuildSettingsData>("guild_settings");
 
 	const findOptions: FindOptions<DBGuildSettingsData> = {};
@@ -124,15 +175,15 @@ export async function fetchSettingValue({ mongodb, setting, guild, session }: Fe
 
 	let value: FetchedSetting;
 	if (guildSettings === undefined) {
-		value = makeDefaultFetchedSetting(setting, guild);
+		value = makeDefaultFetchedSetting(realSetting, guild);
 	} else {
-		const receivedSetting = guildSettings[setting.name];
+		const receivedSetting = guildSettings[realSetting.name];
 		if (receivedSetting === undefined) {
-			value = makeDefaultFetchedSetting(setting, guild);
+			value = makeDefaultFetchedSetting(realSetting, guild);
 		} else {
 			// Typescript is going crazy here
 			value = {
-				...setting,
+				...realSetting,
 				currentValue: receivedSetting,
 				guild,
 			} as FetchedSetting;
@@ -150,7 +201,7 @@ export function createEmbedForFetchedSetting(setting: FetchedSetting): EmbedBuil
 		.addFields([
 			{ name: "Current Value", value: formatFetchedSetting(setting) },
 		])
-		.setFooter({ text: `Real-Time Options - Setting #1/${settings.length}` });
+		.setFooter({ text: `Real-Time Options - Setting #${getSettingIndex(setting.name) + 1}/${settings.length}` });
 
 	return embed;
 }
@@ -168,8 +219,12 @@ export function formatFetchedSetting(setting: FetchedSetting): string {
 	return "Unknown";
 }
 
+function getSettingIndex(setting_name: string): number {
+	return Array.from(settingsMap.keys()).indexOf(setting_name);
+}
+
 export function createComponentsFromSetting(setting: FetchedSetting): ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] {
-	const index = Array.from(settingsMap.keys()).indexOf(setting.name);
+	const index = getSettingIndex(setting.name);
 
 	let settingRow = null;
 
