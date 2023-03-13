@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+import type { ChatInputCommandInteraction, ColorResolvable, SlashCommandBuilder } from "discord.js";
 import type { MongoClient } from "mongodb";
 
 export type StringNum = `${number}`;
@@ -40,4 +40,71 @@ export interface ElevatorTrial {
 	statusChannel: string | null,
 	startTime: Date,
 	participants: Participant[],
+}
+
+export enum SettingValueType {
+	boolean = "boolean",
+	number = "number",
+}
+
+export interface SettingMetadata {
+	frontendName: string,
+	name: string,
+	description: string,
+	color?: ColorResolvable,
+}
+
+export interface FetchedSettingMetadata extends SettingMetadata {
+	guild: string,
+}
+
+export interface BooleanSetting extends FetchedSettingMetadata {
+	valueType: SettingValueType.boolean,
+	currentValue: boolean,
+	defaultValue: boolean,
+}
+
+export interface NumberSetting extends FetchedSettingMetadata {
+	valueType: SettingValueType.number,
+	currentValue: number,
+	defaultValue: number,
+}
+
+export type FetchedSetting =
+	| BooleanSetting
+	| NumberSetting
+
+type NonfetchedSetting<T extends FetchedSetting> = Omit<T, "currentValue" | "guild">
+
+export type Setting = NonfetchedSetting<FetchedSetting>
+
+export function isBooleanSetting(setting: Setting): setting is Omit<BooleanSetting, "currentValue"> {
+	return setting.valueType === SettingValueType.boolean;
+}
+export function isNumberSetting(setting: Setting): setting is Omit<NumberSetting, "currentValue"> {
+	return setting.valueType === SettingValueType.number;
+}
+
+export interface DBInteractionData {
+	/*
+	 * The discord Id of the interaction
+	 */
+	interactionId: string,
+	/*
+	 * Identifies the handler for this type
+	 */
+	interactionType: string,
+}
+
+export interface SettingsUI extends DBInteractionData {
+	interactionType: "commands/settings_ui",
+	guild: string,
+	selectedSetting: string,
+}
+
+export interface DBGuildSettingsData {
+	guild: string,
+	settings: {
+		[name: string]: FetchedSetting["currentValue"], // Represents any valid value
+	}
 }

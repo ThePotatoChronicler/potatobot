@@ -15,6 +15,8 @@ export function constructHandler(client: Client<true>, mongodb: MongoClient): [A
 }
 
 export async function handler(client: Client<true>, mongodb: MongoClient, signal: AbortSignal): Promise<void> {
+	// TODO: Rewrite so it does nothing while the trial database is empty
+	//       using database events, saves connections and reads to the database
 	const trials = mongodb.db("global").collection<ElevatorTrial>("elevator_trials");
 	for await (const _nothing of setInterval(1000, null, { signal })) {
 		await mongodb.withSession(async session => {

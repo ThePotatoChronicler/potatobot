@@ -30,8 +30,11 @@
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+
+    // We depend on ESLint to handle this correctly, since we use _ for allowed unused variables
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
     "importsNotUsedAsValues": "error",
     "checkJs": true,
     "resolveJsonModule": true

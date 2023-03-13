@@ -6,6 +6,7 @@ import { MongoClient } from "mongodb";
 import { replitStart } from "./replit_keepalive";
 import { slashCommandsHandlerMap } from "./commands";
 import { constructHandler as constructElevatorHandler } from "./elevator_handler";
+import { handler as messageComponentHandler } from "./message_component_handler";
 
 if (environment === 'replit') {
 	logger.info("Starting replit keep_alive");
@@ -25,10 +26,13 @@ const client = new Client({
 
 const elevatorHandler = constructElevatorHandler(client, dbclient);
 
-process.addListener("SIGINT", () => {
-	const _ = (async () => {
-		console.log("Called!");
-
+let exitCalled = false;
+const exitListener = () => {
+	if (exitCalled) {
+		return;
+	}
+	exitCalled = true;
+	const _exitPromise = (async () => {
 		elevatorHandler[0].abort("The process is exiting");
 		await elevatorHandler[1].catch(e => {
 			if (e instanceof Error && e.name === "AbortError") {
@@ -40,7 +44,10 @@ process.addListener("SIGINT", () => {
 		client.destroy();
 		process.exit(0);
 	})();
-})
+};
+
+process.on("SIGINT", exitListener)
+process.on("SIGTERM", exitListener)
 
 client.once('ready', client => {
 	logger.info({username: client.user.tag}, `Ready and serving ${client.guilds.cache.size} guild(s)`);
@@ -57,6 +64,10 @@ client.on('interactionCreate', async interaction => {
 		} catch (e) {
 			logger.error({ exception: e }, "Uncaught exception in slash command handler, continuing regardless");
 		}
+	}
+
+	if (interaction.isMessageComponent()) {
+		await messageComponentHandler({ interaction, mongodb: dbclient });
 	}
 });
 
