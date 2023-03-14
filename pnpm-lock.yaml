@@ -6,6 +6,7 @@ specifiers:
   '@types/luxon': ^3.2.0
   '@types/make-fetch-happen': ^10.0.1
   '@types/node': ^18.15.3
+  '@types/papaparse': ^5.3.7
   '@types/yargs': ^17.0.22
   '@typescript-eslint/eslint-plugin': ^5.55.0
   '@typescript-eslint/parser': ^5.55.0
@@ -17,6 +18,7 @@ specifiers:
   luxon: ^3.3.0
   make-fetch-happen: ^11.0.3
   mongodb: ^5.1.0
+  papaparse: ^5.4.0
   pino: ^8.11.0
   pino-pretty: ^9.4.0
   typescript: ^4.9.5
@@ -30,6 +32,7 @@ dependencies:
   luxon: 3.3.0
   make-fetch-happen: 11.0.3
   mongodb: 5.1.0
+  papaparse: 5.4.0
   pino: 8.11.0
   pino-pretty: 9.4.0
   yargs: 17.7.1
@@ -39,6 +42,7 @@ devDependencies:
   '@types/luxon': 3.2.0
   '@types/make-fetch-happen': 10.0.1
   '@types/node': 18.15.3
+  '@types/papaparse': 5.3.7
   '@types/yargs': 17.0.22
   '@typescript-eslint/eslint-plugin': 5.55.0_342y7v4tc7ytrrysmit6jo4wri
   '@typescript-eslint/parser': 5.55.0_vgl77cfdswitgr47lm5swmv43m
@@ -431,6 +435,12 @@ packages:
 
   /@types/node/18.15.3:
     resolution: {integrity: sha512-p6ua9zBxz5otCmbpb5D3U4B5Nanw6Pk3PPyX05xnxbB/fRv71N7CPmORg7uAD5P70T0xmx1pzAx/FUfa5X+3cw==}
+
+  /@types/papaparse/5.3.7:
+    resolution: {integrity: sha512-f2HKmlnPdCvS0WI33WtCs5GD7X1cxzzS/aduaxSu3I7TbhWlENjSPs6z5TaB9K0J+BH1jbmqTaM+ja5puis4wg==}
+    dependencies:
+      '@types/node': 18.15.3
+    dev: true
 
   /@types/retry/0.12.2:
     resolution: {integrity: sha512-XISRgDJ2Tc5q4TRqvgJtzsRkFYNJzZrhTdtMoGVBttwzzQJkPnS3WWTFc7kuDRoPtPakl+T+OfdEUjYJj7Jbow==}
@@ -1671,6 +1681,10 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       aggregate-error: 3.1.0
+    dev: false
+
+  /papaparse/5.4.0:
+    resolution: {integrity: sha512-ZBQABWG09p+u8rFoJVl/GhgxZ5zy9Zh1Lu/LVc7VX5T4nljjC14/YTcpebYwqP218B9X307eBOP7Tuhoqv7v7w==}
     dev: false
 
   /parent-module/1.0.1:

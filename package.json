@@ -6,6 +6,7 @@
     "buildReplit": "node build.mjs --replit",
     "watch": "node build.mjs --watch",
     "start": "node --enable-source-maps dist/main.mjs",
+    "startDebug": "LOGPRETTY=true LOGLEVEL=debug node --trace-warnings --enable-source-maps dist/main.mjs",
     "lint": "tsc --noEmit && eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,6 +22,7 @@
     "luxon": "^3.3.0",
     "make-fetch-happen": "^11.0.3",
     "mongodb": "^5.1.0",
+    "papaparse": "^5.4.0",
     "pino": "^8.11.0",
     "pino-pretty": "^9.4.0",
     "yargs": "^17.7.1"
@@ -30,6 +32,7 @@
     "@types/luxon": "^3.2.0",
     "@types/make-fetch-happen": "^10.0.1",
     "@types/node": "^18.15.3",
+    "@types/papaparse": "^5.3.7",
     "@types/yargs": "^17.0.22",
     "@typescript-eslint/eslint-plugin": "^5.55.0",
     "@typescript-eslint/parser": "^5.55.0",

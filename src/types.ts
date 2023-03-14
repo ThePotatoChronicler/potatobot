@@ -33,6 +33,17 @@ export interface Participant {
 	kickAt: Date,
 }
 
+export interface ParticipantStatistics {
+	userId: string,
+	/*
+	 * Username when the user left (or won)
+	 */
+	username: string,
+	leftAt: Date,
+	duration: number,
+	winner: boolean,
+}
+
 export interface ElevatorTrial {
 	timeout: number,
 	contestantRole: string | null,
@@ -40,6 +51,7 @@ export interface ElevatorTrial {
 	statusChannel: string | null,
 	startTime: Date,
 	participants: Participant[],
+	statistics: ParticipantStatistics[],
 }
 
 export enum SettingValueType {

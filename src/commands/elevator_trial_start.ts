@@ -117,8 +117,9 @@ export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCom
 						kickAt,
 					}
 				}),
+				statistics: [],
 			};
-			await col.insertOne(newTrial, { session })
+			await col.insertOne(newTrial, { session });
 		})
 	})
 

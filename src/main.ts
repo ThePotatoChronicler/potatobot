@@ -81,7 +81,7 @@ client.on('warn', (message) => {
 });
 
 client.on('debug', (message) => {
-	logger.debug({ from: "discord.js" }, message);
+	logger.trace({ from: "discord.js" }, message);
 });
 
 await client.login(discordToken);
