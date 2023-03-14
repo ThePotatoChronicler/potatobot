@@ -1,0 +1,24 @@
+name: Run linter
+on:
+  push:
+    branches:
+      - "javascript"
+  pull_request:
+    branches:
+      - "javascript"
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: "Setup Node.js 19.7.0"
+        uses: actions/setup-node@v3
+        with:
+          node-version: 19.7.0
+      - uses: pnpm/action-setup@v2
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run linter
+        run: pnpm lint

@@ -1,6 +1,6 @@
 {
   "name": "potatobot",
-  "version": "0.0.3dev",
+  "version": "0.0.4",
   "scripts": {
     "build": "node build.mjs",
     "buildReplit": "node build.mjs --replit",
