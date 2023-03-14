@@ -1,10 +1,10 @@
-import { ChannelType, InteractionReplyOptions, SlashCommandBuilder } from "discord.js";
+import { ChannelType, InteractionReplyOptions, SlashCommandSubcommandBuilder } from "discord.js";
 import { logger } from "../logger";
-import type { SlashCommand, SlashCommandContext, ElevatorTrial } from "../types";
+import type { SlashCommandContext, ElevatorTrial } from "../types";
 import { DateTime } from "luxon";
 import { oneLine } from "common-tags";
 
-export async function handler({ interaction, mongodb: dbc }: SlashCommandContext) {
+export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCommandContext) {
 	if (!interaction.inCachedGuild()) {
 		// TODO: If you're bored, replace this with a fetch
 		logger.error({interaction}, "Somehow, received an uncached guild, check your intents!")
@@ -135,59 +135,44 @@ export async function handler({ interaction, mongodb: dbc }: SlashCommandContext
 	})
 }
 
-export const name = "elevator-trial";
-
-export function makeBuilder() {
-	const builder = new SlashCommandBuilder();
-	builder
-		.setName(name)
-		.setDescription("Starts an Elevator Trial in a specific channel")
-		.setDMPermission(false)
-		.addSubcommand(
-			cmd => cmd
-				.setName("start")
-				.setDescription("Starts a new elevator trial")
-				.addChannelOption(
-					o => o
-						.setName("channel")
-						.setDescription("The channel where the trial should be held")
-						.setRequired(true)
-						.addChannelTypes(ChannelType.GuildStageVoice, ChannelType.GuildVoice)
-				)
-				.addRoleOption(
-					o => o
-						.setName("contestant_role")
-						.setDescription("The role of contestants, will be removed when contestants loose")
-						.setRequired(false)
-				)
-				.addIntegerOption(
-					o => o
-						.setName("timeout")
-						.setDescription("How many seconds before competitors are kicked out, defaults to 20")
-						.setRequired(false)
-						.setMinValue(1)
-						.setMaxValue(3600)
-				)
-				.addChannelOption(
-					o => o
-						.setName("status_channel")
-						.setDescription(
-							oneLine`
-								Channel to report
-								statistics about the trial (including the winner),
-								defaults to the current channel
-								`
-						)
-						.setRequired(false)
-						.addChannelTypes(ChannelType.GuildText)
-				)
+export function makeSubcommand(command: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
+	command
+		.setName("start")
+		.setDescription("Starts a new elevator trial")
+		.addChannelOption(
+			o => o
+				.setName("channel")
+				.setDescription("The channel where the trial should be held")
+				.setRequired(true)
+				.addChannelTypes(ChannelType.GuildStageVoice, ChannelType.GuildVoice)
 		)
-	return builder;
-}
+		.addRoleOption(
+			o => o
+				.setName("contestant_role")
+				.setDescription("The role of contestants, will be removed when contestants loose")
+				.setRequired(false)
+		)
+		.addIntegerOption(
+			o => o
+				.setName("timeout")
+				.setDescription("How many seconds before competitors are kicked out, defaults to 20")
+				.setRequired(false)
+				.setMinValue(1)
+				.setMaxValue(3600)
+		)
+		.addChannelOption(
+			o => o
+				.setName("status_channel")
+				.setDescription(
+					oneLine`
+						Channel to report
+						statistics about the trial (including the winner),
+						defaults to the current channel
+						`
+				)
+				.setRequired(false)
+				.addChannelTypes(ChannelType.GuildText)
+		);
 
-const obj: SlashCommand = {
-	handler,
-	name,
-	makeBuilder,
-};
-export default obj;
+	return command;
+}

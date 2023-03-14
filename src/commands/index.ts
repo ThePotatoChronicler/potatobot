@@ -1,6 +1,6 @@
 import xkcd from './xkcd';
 import version from './version';
-import start_elevator_trial from './start_elevator_trial';
+import elevator_trial from './elevator_trial';
 import settings_ui from './settings_ui';
 import push_emoji from './push_emoji';
 import type { SlashCommand } from '../types';
@@ -8,7 +8,7 @@ import type { SlashCommand } from '../types';
 export const slashCommands: SlashCommand[] = [
 	xkcd,
 	version,
-	start_elevator_trial,
+	elevator_trial,
 	settings_ui,
 	push_emoji,
 ]
