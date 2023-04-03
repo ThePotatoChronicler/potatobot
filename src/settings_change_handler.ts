@@ -1,6 +1,12 @@
+/**
+ * This was a prototype for live-editing settings UI with new values,
+ * but it can't be done for ephemeral messages.
+ *
+ * May be used later when this problem is resolved.
+ */
+
 import type { Client as DiscordClient } from "discord.js";
 import type { ChangeStreamReplaceDocument, MongoClient } from "mongodb";
-import { logger } from "./logger";
 import type { DBGuildSettingsData, SettingsUI, WithMongoSession } from "./types";
 
 export interface SetupSettingsChangeHandlerContext {
@@ -82,7 +88,6 @@ async function _updateOldInteractions(ctx: WithMongoSession<UpdateOldInteraction
 		}
 
 		const interactionFetched = await channelFetched.messages.fetch(interaction.interactionId);
-		logger.info({ interactionFetched }, "Look at me go smh");
 		await interactionFetched.edit({
 			"content": "Wack",
 		})

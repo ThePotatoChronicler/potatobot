@@ -30,26 +30,16 @@ export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCom
 		return;
 	}
 
+	const guildMe = await trialChannel.guild.members.fetchMe();
 	if (contestantRole !== null) {
-		const me = await interaction.guild.members.fetchMe();
-		const roleComparison = contestantRole.comparePositionTo(me.roles.highest);
-		if (roleComparison >= 0 || !me.permissions.has("ManageRoles")) {
+		const roleComparison = contestantRole.comparePositionTo(guildMe.roles.highest);
+		if (roleComparison >= 0 || !guildMe.permissions.has("ManageRoles")) {
 			await interaction.reply({
 				content: "I don't have high enough permissions to remove that role from contestants",
 				ephemeral: true,
 			})
 			return;
 		}
-	}
-
-	const guildMe = trialChannel.guild.members.me;
-	if (guildMe === null) {
-		logger.error({interaction}, "Can't find myself, possibly wrong intents")
-		await interaction.reply({
-			content: "An internal error has occurred and will be inspected soon",
-			ephemeral: true,
-		})
-		return;
 	}
 
 	if (!trialChannel.permissionsFor(guildMe).has("MoveMembers")) {
