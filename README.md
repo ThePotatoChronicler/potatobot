@@ -5,9 +5,8 @@ set it up yourself.
 
 ## Usage
 ```sh
-pnpm install
-pnpm build
-pnpm start
+bun install
+bun start
 ```
 
 ## Important environment variables
