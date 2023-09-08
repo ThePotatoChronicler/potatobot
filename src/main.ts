@@ -40,13 +40,13 @@ const exitListener = () => {
 			if (e instanceof Error && e.name === "AbortError") {
 				return;
 			}
-			logger.error({ error: e as unknown }, "Error occurred in elevator handler");
+			logger.error("Error occurred in elevator handler", { error: e as unknown });
 		});
 
 		// settingsChangeHandler[0].abort();
 		// await settingsChangeHandler[1];
 
-		client.destroy();
+		await client.destroy();
 		process.exit(0);
 	})();
 };
@@ -55,7 +55,7 @@ process.on("SIGINT", exitListener)
 process.on("SIGTERM", exitListener)
 
 client.once('ready', client => {
-	logger.info({username: client.user.tag}, `Ready and serving ${client.guilds.cache.size} guild(s)`);
+	logger.info(`Ready and serving ${client.guilds.cache.size} guild(s)`, {username: client.user.tag}, );
 });
 
 client.on('interactionCreate', async interaction => {
@@ -67,7 +67,7 @@ client.on('interactionCreate', async interaction => {
 				mongodb: dbclient
 			});
 		} catch (e) {
-			logger.error({ exception: e }, "Uncaught exception in slash command handler, continuing regardless");
+			logger.error("Uncaught exception in slash command handler, continuing regardless", { exception: e });
 		}
 	}
 
@@ -77,11 +77,11 @@ client.on('interactionCreate', async interaction => {
 });
 
 client.on('warn', (message) => {
-	logger.warn({ from: "discord.js" }, message);
+	logger.warn(message, { from: "discord.js" });
 });
 
 client.on('debug', (message) => {
-	logger.trace({ from: "discord.js" }, message);
+	logger.debug(message, { from: "discord.js" });
 });
 
 await client.login(discordToken);

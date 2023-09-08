@@ -5,7 +5,7 @@ import type { InteractionHandlerContext } from "../message_component_handler";
 import { Setting, FetchedSetting, DBGuildSettingsData, SettingValueType, SettingsUI } from "../types";
 import enable_push_emoji from "./enable_push_emoji";
 
-const settings = [
+const settings: Setting[] = [
 	enable_push_emoji,
 ];
 
@@ -40,7 +40,7 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 	}
 
 	if (!interaction.inCachedGuild()) {
-		logger.error({ interaction }, "Uncached guild");
+		logger.error("Uncached guild", { interaction });
 		await interaction.editReply({
 			content: "An error occurred, notify the bot developer, or don't, your choice",
 			embeds: [],
@@ -94,7 +94,7 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 
 				const newSettingName = Array.from(settingsMap.keys())[newIndex];
 				if (newSettingName === undefined) {
-					shownSetting = settings[0] as Setting;
+					shownSetting = settings[0];
 					return true;
 				}
 
@@ -157,7 +157,7 @@ export async function fetchSettingValue({ mongodb, setting, guild, session }: Fe
 	if (typeof setting === "string") {
 		const mappedSetting = settingsMap.get(setting);
 		if (mappedSetting === undefined) {
-			logger.error({ setting }, "Received non-existent setting name");
+			logger.error("Received non-existent setting name", { setting });
 			throw Error("Setting doesn't exist");
 		}
 		realSetting = mappedSetting;
@@ -215,7 +215,7 @@ export function formatFetchedSetting(setting: FetchedSetting): string {
 		return String(setting.currentValue);
 	}
 
-	logger.error({ setting }, "Cannot format");
+	logger.error("Cannot format", { setting });
 	return "Unknown";
 }
 

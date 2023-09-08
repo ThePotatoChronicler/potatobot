@@ -51,7 +51,7 @@ async function registerGlobalCommands(db: MongoClient) {
 				{ upsert: true, session }
 			);
 
-			logger.debug(updateResult, "appcommands.updateResult")
+			logger.debug("appcommands.updateResult", { updateResult });
 		});
 	});
 	return result;

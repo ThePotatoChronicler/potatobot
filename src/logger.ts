@@ -1,16 +1,18 @@
-import pino from "pino";
+import winston from "winston";
 
 const pretty = process.env["LOGPRETTY"] !== undefined;
 
-const options: pino.LoggerOptions = {
-	name: "potatobot",
+const options: winston.LoggerOptions = {
 	level: process.env["LOGLEVEL"] ?? "warn",
+	transports: [],
 };
 
-if (pretty) {
-	options.transport = {
-		target: 'pino-pretty'
-	};
-}
+export const logger = winston.createLogger(options);
 
-export const logger = pino(options);
+if (pretty) {
+	logger.add(new winston.transports.Console({
+		format: winston.format.prettyPrint({
+			colorize: true,
+		}),
+	}));
+}

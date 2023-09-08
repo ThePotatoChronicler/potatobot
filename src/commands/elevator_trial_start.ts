@@ -7,11 +7,11 @@ import { oneLine } from "common-tags";
 export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCommandContext) {
 	if (!interaction.inCachedGuild()) {
 		// TODO: If you're bored, replace this with a fetch
-		logger.error({interaction}, "Somehow, received an uncached guild, check your intents!")
+		logger.error("Somehow, received an uncached guild, check your intents!", {interaction});
 		await interaction.reply({
 			content: "An internal error has occurred and will be inspected soon",
 			ephemeral: true,
-		})
+		});
 		return;
 	}
 
@@ -26,7 +26,7 @@ export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCom
 		await interaction.reply({
 			content: "`channel` should be a voice channel",
 			ephemeral: true,
-		})
+		});
 		return;
 	}
 
@@ -119,7 +119,7 @@ export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCom
 	}
 
 	const plural = participants.size === 1 ? "" : "s";
-	logger.info({ participants }, "Started new elevator trial");
+	logger.info("Started new elevator trial", { participants });
 	await interaction.reply({
 		content: `Created a new elevator trial with ${participants.size} participant${plural}`,
 		ephemeral: true,

@@ -13,7 +13,7 @@ export async function handler({ interaction, mongodb }: SlashCommandContext) {
 	}
 
 	if (!interaction.inCachedGuild()) {
-		logger.error({ interaction }, "Received uncached guild");
+		logger.error("Received uncached guild", { interaction });
 		await interaction.reply({
 			content: "If you're seeing this, contact the developer",
 			ephemeral: true,

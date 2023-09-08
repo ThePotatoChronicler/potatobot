@@ -18,7 +18,7 @@ export async function handler(ctx: SlashCommandContext) {
 		return;
 	}
 
-	logger.error({ interaction }, "Invalid subcommand");
+	logger.error("Invalid subcommand", { interaction });
 	await interaction.reply({
 		content: "Invalid subcommand",
 		ephemeral: true,

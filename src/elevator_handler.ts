@@ -102,7 +102,7 @@ async function processTrial(
 	await removeContestantsRole(trial, trialChannel, toRemoveParticipants);
 
 	if (newParticipants.length === 0) {
-		logger.warn({ trial }, "Couldn't determine winner");
+		logger.warn("Couldn't determine winner", {trial});
 		const msgContent = oneLine`
 			Couldn't determine a winner for elevator trial
 			in channel ${channelMention(trial.trialChannel)}
@@ -151,7 +151,7 @@ interface ReportVictoryContext {
 }
 
 async function reportVictory({trials, trial, trialChannel, statistics, winner, timeNow, client, session}: ReportVictoryContext) {
-	logger.debug({ trial, channel: trialChannel, winner }, "Trial victory");
+	logger.debug("Trial victory", { trial, channel: trialChannel, winner });
 	const msgContent = oneLine`
 		The winner for elevator trial
 		in channel ${channelMention(trial.trialChannel)}

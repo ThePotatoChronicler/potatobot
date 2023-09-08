@@ -1,43 +1,47 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "potatobot",
-  "version": "0.0.4",
+  "version": "0.1.0",
+  "module": "src/main.ts",
   "scripts": {
-    "build": "node build.mjs",
-    "buildReplit": "node build.mjs --replit",
-    "watch": "node build.mjs --watch",
-    "start": "node --enable-source-maps dist/main.mjs",
-    "startDebug": "LOGPRETTY=true LOGLEVEL=debug node --trace-warnings --enable-source-maps dist/main.mjs",
-    "lint": "tsc --noEmit && eslint .",
+    "build": "bun build.mjs",
+    "buildReplit": "bun build.mjs --replit",
+    "watch": "bun build.mjs --watch",
+    "start": "bun src/main.ts",
+    "startDebug": "LOGPRETTY=true LOGLEVEL=debug bun run src/main.ts",
+    "lint": "tsc && eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "license": "ISC",
-  "packageManager": "pnpm@7.28.0",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
-    "@discordjs/builders": "^1.6.1",
+    "@discordjs/builders": "^1.6.5",
     "common-tags": "^1.8.2",
-    "discord.js": "^14.9.0",
-    "dotenv": "^16.0.3",
+    "discord.js": "^14.13.0",
     "luxon": "^3.3.0",
     "make-fetch-happen": "^11.0.3",
-    "mongodb": "^5.1.0",
+    "mongodb": "^6.0.0",
     "papaparse": "^5.4.1",
-    "pino": "^8.11.0",
-    "pino-pretty": "^10.0.0",
-    "yargs": "^17.7.1"
+    "winston": "^3.10.0",
+    "yargs": "^17.7.1",
+    "zlib-sync": "^0.1.8"
   },
   "devDependencies": {
     "@types/common-tags": "^1.8.1",
     "@types/luxon": "^3.2.0",
     "@types/make-fetch-happen": "^10.0.1",
-    "@types/node": "^18.15.11",
     "@types/papaparse": "^5.3.7",
     "@types/yargs": "^17.0.24",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
-    "esbuild": "^0.17.15",
-    "eslint": "^8.37.0",
-    "typescript": "^5.0.3"
-  }
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
+    "eslint": "^8.48.0",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "5.2.0"
+  },
+  "trustedDependencies": [
+    "zlib_sync"
+  ]
 }
