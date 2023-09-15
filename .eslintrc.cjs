@@ -4,8 +4,6 @@ module.exports = {
   parserOptions: {
     tsconfigRootDir: __dirname,
     project: ['./tsconfig.json'],
-    sourceType: "module",
-    ecmaVersion: 2022
   },
   plugins: ['@typescript-eslint'],
   extends: [
@@ -14,8 +12,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-requiring-type-checking',
   ],
   env: {
-    node: true,
-    es6: true,
+    node: true
   },
   rules: {
     "no-unused-vars": "off",

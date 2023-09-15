@@ -6,14 +6,17 @@ import { oneLine } from "common-tags";
 
 export async function startElevatorTrial({ interaction, mongodb: dbc }: SlashCommandContext) {
 	if (!interaction.inCachedGuild()) {
+		// I have forgotten why I wrote this
 		// TODO: If you're bored, replace this with a fetch
-		logger.error("Somehow, received an uncached guild, check your intents!", {interaction});
+		logger.error("Somehow, received an uncached guild, check your intents!", {interaction}); 
 		await interaction.reply({
 			content: "An internal error has occurred and will be inspected soon",
 			ephemeral: true,
 		});
 		return;
 	}
+
+	// FIXME: This doesn't check for the permissions of the member
 
 	const col = dbc.db("global").collection<ElevatorTrial>("elevator_trials");
 

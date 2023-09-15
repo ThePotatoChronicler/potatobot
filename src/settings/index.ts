@@ -2,11 +2,13 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelec
 import type { ClientSession, FindOptions, MongoClient } from "mongodb";
 import { logger } from "../logger";
 import type { InteractionHandlerContext } from "../message_component_handler";
-import { Setting, FetchedSetting, DBGuildSettingsData, SettingValueType, SettingsUI } from "../types";
+import { Setting, FetchedSetting, DBGuildSettingsData, SettingValueType, SettingsUI, InteractionData } from "../types";
 import enable_push_emoji from "./enable_push_emoji";
+import enable_renameall from "./enable_renameall";
 
 const settings: Setting[] = [
 	enable_push_emoji,
+	enable_renameall,
 ];
 
 export const settingsMap = new Map(settings.map(s => {
@@ -29,7 +31,7 @@ async function updateSettings<T extends DBGuildSettingsData>(
 }
 
 export async function settingsInteractionHandler(ctx: InteractionHandlerContext) {
-	const { interaction, interactionData } = ctx;
+	const { interaction, interactionData, mongodb, session } = ctx;
 	if (!interaction.inGuild()) {
 		await interaction.editReply({
 			content: "Settings are only supported for guilds right now",
@@ -57,8 +59,8 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 		return;
 	}
 
-	const data = interactionData as SettingsUI;
-	const setting = settingsMap.get(data.selectedSetting);
+	const settingsData = interactionData as SettingsUI;
+	const setting = settingsMap.get(settingsData.selectedSetting);
 	if (setting === undefined) {
 		await interaction.editReply({
 			content: "This setting never existed, or doesn't exist anymore",
@@ -73,49 +75,59 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 
 	let shownSetting: Setting = setting;
 
-	const updated: boolean = (() => {
-		const cs = currentSettings.settings;
-
-		{
-			const match = interaction.customId.match(/^commands\/settings_ui:boolean_(off|on)$/);
-			if (match !== null) {
-				const toggle = match[1] as "on" | "off";
-				cs[setting.name] = toggle === "on";
-				return true;
-			}
+	const changedSettings = (() => {
+		const match = interaction.customId.match(/^commands\/settings_ui:boolean_(off|on)$/);
+		if (match === null) {
+			return false;
 		}
-
-		{
-			const match = interaction.customId.match(/^commands\/settings_ui:page_(prev|next)$/)
-			if (match !== null) {
-				const direction = match[1] as "prev" | "next";
-				const index = getSettingIndex(setting.name);
-				const newIndex = index + (direction === "prev" ? -1 : 1);
-
-				const newSettingName = Array.from(settingsMap.keys())[newIndex];
-				if (newSettingName === undefined) {
-					shownSetting = settings[0];
-					return true;
-				}
-
-				shownSetting = settingsMap.get(newSettingName) as Setting;
-				return true;
-			}
-		}
-
-		// We didn't update anything
-		return false;
+		const toggle = match[1] as "on" | "off";
+		currentSettings.settings[setting.name] = toggle === "on";
+		return true;
 	})();
 
-	if (updated) {
+	const changedPage = (() => {
+			const match = interaction.customId.match(/^commands\/settings_ui:page_(prev|next)$/)
+			if (match === null) {
+				return false;
+			}
+
+			const direction = match[1] as "prev" | "next";
+			const index = getSettingIndex(setting.name);
+			const newIndex = index + (direction === "prev" ? -1 : 1);
+
+			const newSettingName = Array.from(settingsMap.keys())[newIndex];
+			if (newSettingName === undefined) {
+				// We assume there is atleast one setting
+				shownSetting = settings[0] as Setting;
+				return true;
+			}
+
+			// We assume there is atleast one setting
+			shownSetting = settingsMap.get(newSettingName) as Setting;
+			return true;
+	})();
+
+	const interactionsCol = mongodb.db("global").collection<InteractionData>("interactions");
+
+	const currentValue = currentSettings.settings[shownSetting.name] ?? shownSetting.defaultValue;
+
+	if (changedSettings) {
 		await updateSettings(ctx, guild, currentSettings);
+	}
 
-		const currentValue = currentSettings.settings[shownSetting.name] ?? shownSetting.defaultValue;
-		if (currentValue === undefined) {
-			logger.error("Unexpected undefined setting");
-			return;
-		}
+	if (changedPage) {
+		await interactionsCol.updateOne({
+			interactionId: settingsData.interactionId,
+		}, {
+			$set: {
+					selectedSetting: shownSetting.name,
+			},
+		}, {
+			session,
+		});
+	}
 
+	if (changedPage || changedSettings) {
 		const fetchedSetting: FetchedSetting = {
 			...shownSetting,
 			currentValue,
@@ -126,14 +138,7 @@ export async function settingsInteractionHandler(ctx: InteractionHandlerContext)
 			embeds: [createEmbedForFetchedSetting(fetchedSetting)],
 			components: createComponentsFromSetting(fetchedSetting),
 		});
-		return;
 	}
-
-	await interaction.editReply({
-		content: "Don't know how to handle this, try again",
-		embeds: [],
-		components: [],
-	});
 }
 
 function makeDefaultFetchedSetting(setting: Setting, guild: string): FetchedSetting {
@@ -165,13 +170,13 @@ export async function fetchSettingValue({ mongodb, setting, guild, session }: Fe
 		realSetting = setting;
 	}
 
-	const col = mongodb.db("global").collection<DBGuildSettingsData>("guild_settings");
+	const guildSettingsCol = mongodb.db("global").collection<DBGuildSettingsData>("guild_settings");
 
 	const findOptions: FindOptions<DBGuildSettingsData> = {};
 	if (session) {
 		findOptions.session = session;
 	}
-	const guildSettings = (await col.findOne({ guild }, findOptions))?.settings;
+	const guildSettings = (await guildSettingsCol.findOne({ guild }, findOptions))?.settings;
 
 	let value: FetchedSetting;
 	if (guildSettings === undefined) {

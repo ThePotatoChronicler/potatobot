@@ -1,7 +1,7 @@
 import { REST, Routes } from "discord.js";
 import type { MongoClient } from "mongodb";
 import { slashCommands } from "./commands";
-import { applicationID, discordToken } from "./env";
+import { discordToken } from "./env";
 import { logger } from "./logger";
 
 function getGlobalSlashCommands() {
@@ -24,7 +24,7 @@ function getGlobalCommands() {
 /*
  * Registers commands if they've changed
  */
-async function registerGlobalCommands(db: MongoClient) {
+async function registerGlobalCommands(db: MongoClient, applicationID: string) {
 	const rest = new REST().setToken(discordToken);
 	const cmds = getGlobalCommands();
 

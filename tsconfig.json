@@ -1,32 +1,40 @@
-// Based on `bun init`
+// Based on @tsconfig/node18-strictest-esm
+// Copied here since not everything respects the `extends` property
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "Bun",
-  "docs": "https://bun.sh/docs/runtime/typescript",
-  "compilerOptions": {
-    "lib": [
-      "ESNext"
-    ],
-    "module": "esnext",
-    "target": "esnext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "force",
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "strict": true,
-    "downlevelIteration": true,
-    "skipLibCheck": true,
-    "jsx": "preserve",
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowJs": true,
-    "types": [
-      "bun-types" // add Bun global
-    ],
-  },
   "include": [
     "src/**/*",
-    "package.json",
-  ]
+    "build.mjs"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "display": "Node 18 + ESM + Strictest",
+  "compilerOptions": {
+    "lib": [
+      "es2022"
+    ],
+    "module": "es2022",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    // We depend on ESLint to handle this correctly, since we use _ for allowed unused variables
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "checkJs": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+  }
 }
 // vim: ft=jsonc

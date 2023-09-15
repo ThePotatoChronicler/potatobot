@@ -1,26 +1,31 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "potatobot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "module": "src/main.ts",
   "scripts": {
-    "build": "bun build.mjs",
-    "buildReplit": "bun build.mjs --replit",
-    "watch": "bun build.mjs --watch",
-    "start": "bun src/main.ts",
-    "startDebug": "LOGPRETTY=true LOGLEVEL=debug bun run src/main.ts",
+    "build": "node build.mjs",
+    "buildReplit": "node build.mjs --replit",
+    "start": "node --enable-source-maps dist/main.mjs",
+    "startDebug": "LOGPRETTY=true LOGLEVEL=debug node --trace-warnings --enable-source-maps dist/main.mjs",
     "lint": "tsc && eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "packageManager": "pnpm@^8.7.5",
+  "keywords": [
+    "discord",
+    "bot"
+  ],
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@discordjs/builders": "^1.6.5",
     "common-tags": "^1.8.2",
     "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "lodash-es": "^4.17.21",
     "luxon": "^3.3.0",
-    "make-fetch-happen": "^11.0.3",
+    "make-fetch-happen": "^13.0.0",
     "mongodb": "^6.0.0",
     "papaparse": "^5.4.1",
     "winston": "^3.10.0",
@@ -31,17 +36,13 @@
     "@types/common-tags": "^1.8.1",
     "@types/luxon": "^3.2.0",
     "@types/make-fetch-happen": "^10.0.1",
+    "@types/node": "^20.6.0",
     "@types/papaparse": "^5.3.7",
     "@types/yargs": "^17.0.24",
     "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^6.6.0",
+    "esbuild": "^0.19.3",
     "eslint": "^8.48.0",
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "5.2.0"
-  },
-  "trustedDependencies": [
-    "zlib_sync"
-  ]
+    "typescript": "^5.0.0"
+  }
 }

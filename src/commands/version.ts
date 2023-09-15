@@ -1,10 +1,10 @@
 import { SlashCommandBuilder } from "discord.js";
-import package_json from "../../package.json";
+import { version } from "../../package.json";
 import type { SlashCommand, SlashCommandContext } from "../types";
 
 export async function handler({ interaction }: SlashCommandContext) {
 	await interaction.reply({
-		content: package_json.version
+		content: version
 	});
 }
 

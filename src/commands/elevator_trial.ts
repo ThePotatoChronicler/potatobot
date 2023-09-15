@@ -33,8 +33,8 @@ export function makeBuilder() {
 		.setName(name)
 		.setDescription("Starts an Elevator Trial in a specific channel")
 		.setDMPermission(false)
-		.addSubcommand(cmd => makeStartSubcommand(cmd))
-		.addSubcommand(cmd => makeRegisterSubcommand(cmd))
+		.addSubcommand(makeStartSubcommand)
+		.addSubcommand(makeRegisterSubcommand)
 	return builder;
 }
 

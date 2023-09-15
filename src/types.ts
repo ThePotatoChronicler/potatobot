@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, ColorResolvable, SlashCommandBuilder } from "discord.js";
+import type { CacheType, ChatInputCommandInteraction, ColorResolvable, SlashCommandBuilder } from "discord.js";
 import type { ClientSession, MongoClient } from "mongodb";
 
 export type StringNum = `${number}`;
@@ -17,9 +17,10 @@ export interface XKCDResponse {
 	img: string,
 }
 
-export interface SlashCommandContext {
-	interaction: ChatInputCommandInteraction,
+export interface SlashCommandContext<Cached extends CacheType = CacheType> {
+	interaction: ChatInputCommandInteraction<Cached>,
 	mongodb: MongoClient,
+	abortSignal: AbortSignal,
 }
 
 export interface SlashCommand {
@@ -115,6 +116,12 @@ export interface SettingsUI extends DBInteractionData {
 	selectedSetting: string,
 }
 
+/**
+ * Represents all possible interaction data there can be
+ */
+export type InteractionData =
+	| SettingsUI
+
 export interface DBGuildSettingsData {
 	guild: string,
 	settings: {
@@ -123,3 +130,28 @@ export interface DBGuildSettingsData {
 }
 
 export type WithMongoSession<T> = T & { session: ClientSession }
+
+export enum RenameallType {
+	format = "format",
+	clear = "clear",
+}
+
+export interface RenameallDataBase {
+	guild: string,
+	type: string,
+	renamedMembers: string[],
+	interactionToken: string,
+}
+
+export interface RenameallFormatData extends RenameallDataBase {
+	type: RenameallType.format,
+	format: string,
+}
+
+export interface RenameallClearData extends RenameallDataBase {
+	type: RenameallType.clear,
+}
+
+export type RenameallData =
+	| RenameallClearData
+	| RenameallFormatData

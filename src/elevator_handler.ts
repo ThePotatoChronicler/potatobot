@@ -7,14 +7,6 @@ import type { Participant, ElevatorTrial, ParticipantStatistics } from "./types"
 import papaparse from "papaparse";
 import { logger } from "./logger";
 
-export function constructHandler(client: Client<true>, mongodb: MongoClient): [AbortController, Promise<void>] {
-	const controller = new AbortController();
-
-	const handlerPromise = handler(client, mongodb, controller.signal);
-
-	return [controller, handlerPromise];
-}
-
 export async function handler(client: Client<true>, mongodb: MongoClient, signal: AbortSignal): Promise<void> {
 	// TODO: Rewrite so it does nothing while the trial database is empty
 	//       using database events, saves connections and reads to the database
